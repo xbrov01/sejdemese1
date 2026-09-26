@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="v2-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b132b" />
+      <stop offset="60%" stop-color="#1c2541" />
+      <stop offset="100%" stop-color="#0b132b" />
+    </linearGradient>
+
+    <linearGradient id="v2-cal-header" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#059669" />
+      <stop offset="50%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#14b8a6" />
+    </linearGradient>
+
+    <linearGradient id="v2-card-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#e2e8f0" />
+    </linearGradient>
+
+    <linearGradient id="v2-shield" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#047857" />
+    </linearGradient>
+
+    <linearGradient id="v2-accent-orange" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f97316" />
+      <stop offset="100%" stop-color="#ea580c" />
+    </linearGradient>
+
+    <filter id="v2-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="16" flood-color="#000000" flood-opacity="0.5" />
+      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#059669" flood-opacity="0.3" />
+    </filter>
+
+    <filter id="v2-badge-glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#10b981" flood-opacity="0.6" />
+    </filter>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="512" height="512" rx="120" fill="url(#v2-bg)" />
+  <rect width="512" height="512" rx="120" fill="none" stroke="#3b82f6" stroke-width="2" opacity="0.3" />
+
+  <!-- Stadium pitch lines in background -->
+  <g opacity="0.15" stroke="#38bdf8" stroke-width="3" fill="none">
+    <ellipse cx="256" cy="256" rx="180" ry="180" />
+    <line x1="256" y1="70" x2="256" y2="442" />
+    <circle cx="256" cy="256" r="60" />
+  </g>
+
+  <!-- Calendar Page Container -->
+  <g filter="url(#v2-shadow)">
+    <!-- Calendar Body -->
+    <rect x="96" y="110" width="320" height="310" rx="36" fill="url(#v2-card-grad)" />
+
+    <!-- Calendar Top Bar -->
+    <path d="M 96,146 C 96,126 112,110 132,110 L 380,110 C 400,110 416,126 416,146 L 416,190 L 96,190 Z" fill="url(#v2-cal-header)" />
+
+    <!-- Calendar Binding Rings -->
+    <rect x="156" y="86" width="24" height="48" rx="12" fill="#0f172a" stroke="#ffffff" stroke-width="3" />
+    <rect x="332" y="86" width="24" height="48" rx="12" fill="#0f172a" stroke="#ffffff" stroke-width="3" />
+
+    <!-- Calendar Header Dots / Title -->
+    <circle cx="156" cy="150" r="6" fill="#ffffff" opacity="0.8" />
+    <rect x="180" y="144" width="152" height="12" rx="6" fill="#ffffff" opacity="0.85" />
+    <circle cx="356" cy="150" r="6" fill="#ffffff" opacity="0.8" />
+
+    <!-- Event Date / Time Typography & Stadium Grid -->
+    <g fill="#334155" opacity="0.9">
+      <!-- Calendar Grid Cells -->
+      <circle cx="156" cy="235" r="14" fill="#cbd5e1" />
+      <circle cx="216" cy="235" r="14" fill="#cbd5e1" />
+      <circle cx="276" cy="235" r="14" fill="#cbd5e1" />
+      <circle cx="336" cy="235" r="14" fill="#cbd5e1" />
+
+      <circle cx="156" cy="290" r="14" fill="#cbd5e1" />
+      <circle cx="216" cy="290" r="14" fill="#cbd5e1" />
+      <circle cx="276" cy="290" r="14" fill="#cbd5e1" />
+      <circle cx="336" cy="290" r="14" fill="#cbd5e1" />
+    </g>
+
+    <!-- Highlighted Active Meeting Day Circle -->
+    <circle cx="276" cy="290" r="24" fill="url(#v2-accent-orange)" />
+    <text x="276" y="296" font-family="system-ui, sans-serif" font-size="16" font-weight="900" fill="#ffffff" text-anchor="middle">SO</text>
+  </g>
+
+  <!-- Big Floating Attendance Shield with 3D Pop -->
+  <g filter="url(#v2-badge-glow)">
+    <path d="M 330,240 
+             C 390,240 430,260 430,300 
+             C 430,380 340,430 330,440 
+             C 320,430 230,380 230,300 
+             C 230,260 270,240 330,240 Z" 
+          fill="url(#v2-shield)" 
+          stroke="#ffffff" 
+          stroke-width="6" />
+
+    <!-- Shield Checkmark -->
+    <path d="M 285,325 
+             L 315,355 
+             L 375,290" 
+          fill="none" 
+          stroke="#ffffff" 
+          stroke-width="14" 
+          stroke-linecap="round" 
+          stroke-linejoin="round" />
+
+    <!-- "SEJDEME SE!" Mini Question Mark Crown on top left of shield -->
+    <circle cx="330" cy="210" r="14" fill="#fbbf24" stroke="#ffffff" stroke-width="3" />
+    <text x="330" y="216" font-family="system-ui, sans-serif" font-size="18" font-weight="900" fill="#0f172a" text-anchor="middle">?</text>
+  </g>
+</svg>

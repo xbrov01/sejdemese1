@@ -1,0 +1,74 @@
+{
+  "entities": {
+    "users": {
+      "title": "Uživatelé",
+      "description": "Seznam registrovaných uživatelů",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "member"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "notificationPreferences": { "type": "object" },
+        "fontSize": { "type": "string", "enum": ["standard", "large", "xlarge"] },
+        "deviceTokens": { "type": "array" }
+      },
+      "required": ["name", "email", "role"]
+    },
+    "teams": {
+      "title": "Týmy",
+      "description": "Sportovní týmy a skupiny",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "code": { "type": "string" },
+        "createdBy": { "type": "string" },
+        "memberEmails": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "code", "createdBy"]
+    },
+    "events": {
+      "title": "Události",
+      "description": "Sportovní události a tréninky",
+      "type": "object",
+      "properties": {
+        "teamId": { "type": "string" },
+        "title": { "type": "string" },
+        "date": { "type": "string" },
+        "time": { "type": "string" },
+        "location": { "type": "string" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "reminders": {
+          "type": "array",
+          "items": { "type": "number" }
+        }
+      },
+      "required": ["teamId", "title", "date", "time"]
+    },
+    "notifications": {
+      "title": "Notifikace",
+      "description": "Uživatelská oznámení a připomenutí",
+      "type": "object",
+      "properties": {
+        "userEmail": { "type": "string" },
+        "teamId": { "type": "string" },
+        "teamName": { "type": "string" },
+        "eventId": { "type": "string" },
+        "eventTitle": { "type": "string" },
+        "type": { "type": "string", "enum": ["TEAM_REMINDER", "ATTENDANCE_REMINDER", "CHAT_MESSAGE", "EVENT_CREATED", "EVENT_UPDATED", "EVENT_CANCELLED"] },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "notificationKey": { "type": "string" }
+      },
+      "required": ["userEmail", "type", "title", "message", "read", "createdAt"]
+    }
+  }
+}
+

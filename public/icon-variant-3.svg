@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="v3-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#090d16" />
+      <stop offset="50%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+
+    <radialGradient id="v3-radar-glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.4" />
+      <stop offset="50%" stop-color="#06b6d4" stop-opacity="0.15" />
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0" />
+    </radialGradient>
+
+    <linearGradient id="v3-pin-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="50%" stop-color="#059669" />
+      <stop offset="100%" stop-color="#047857" />
+    </linearGradient>
+
+    <linearGradient id="v3-neon-s" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="50%" stop-color="#34d399" />
+      <stop offset="100%" stop-color="#a855f7" />
+    </linearGradient>
+
+    <filter id="v3-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#10b981" flood-opacity="0.6" />
+      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#38bdf8" flood-opacity="0.8" />
+    </filter>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="512" height="512" rx="120" fill="url(#v3-bg)" />
+  <rect width="512" height="512" rx="120" fill="none" stroke="#1e293b" stroke-width="3" />
+
+  <!-- Radar Rings -->
+  <circle cx="256" cy="256" r="210" fill="none" stroke="#1e293b" stroke-width="2" />
+  <circle cx="256" cy="256" r="160" fill="none" stroke="#334155" stroke-width="2" stroke-dasharray="8 8" />
+  <circle cx="256" cy="256" r="110" fill="none" stroke="#10b981" stroke-width="2" opacity="0.4" />
+  <circle cx="256" cy="256" r="180" fill="url(#v3-radar-glow)" />
+
+  <!-- Radar Crosshairs -->
+  <line x1="256" y1="56" x2="256" y2="456" stroke="#334155" stroke-width="2" opacity="0.4" />
+  <line x1="56" y1="256" x2="456" y2="256" stroke="#334155" stroke-width="2" opacity="0.4" />
+
+  <!-- Approaching Team Member Dots (Teammates traveling to venue) -->
+  <g opacity="0.9">
+    <!-- North Teammate -->
+    <circle cx="256" cy="116" r="14" fill="#38bdf8" />
+    <circle cx="256" cy="116" r="22" fill="none" stroke="#38bdf8" stroke-width="2" opacity="0.5" />
+
+    <!-- East Teammate -->
+    <circle cx="396" cy="256" r="14" fill="#34d399" />
+    <circle cx="396" cy="256" r="22" fill="none" stroke="#34d399" stroke-width="2" opacity="0.5" />
+
+    <!-- South Teammate -->
+    <circle cx="256" cy="396" r="14" fill="#10b981" />
+    <circle cx="256" cy="396" r="22" fill="none" stroke="#10b981" stroke-width="2" opacity="0.5" />
+
+    <!-- West Teammate -->
+    <circle cx="116" cy="256" r="14" fill="#a855f7" />
+    <circle cx="116" cy="256" r="22" fill="none" stroke="#a855f7" stroke-width="2" opacity="0.5" />
+  </g>
+
+  <!-- Central Venue Pin & Stylized Attendance Check 'S' -->
+  <g filter="url(#v3-glow)">
+    <!-- Location Pin / Beacon Shape -->
+    <path d="M 256,120 
+             C 195,120 146,169 146,230 
+             C 146,310 256,400 256,400 
+             C 256,400 366,310 366,230 
+             C 366,169 317,120 256,120 Z" 
+          fill="url(#v3-pin-grad)" 
+          stroke="#ffffff" 
+          stroke-width="5" />
+
+    <!-- Inner Core Badge -->
+    <circle cx="256" cy="225" r="62" fill="#0f172a" stroke="#ffffff" stroke-width="4" />
+
+    <!-- Neon Question Mark morphing into Checkmark in center -->
+    <path d="M 230,225 
+             L 250,245 
+             L 288,195" 
+          fill="none" 
+          stroke="#34d399" 
+          stroke-width="12" 
+          stroke-linecap="round" 
+          stroke-linejoin="round" />
+
+    <!-- Question Mark Top Loop & Dot -->
+    <circle cx="256" cy="265" r="5" fill="#38bdf8" />
+  </g>
+</svg>
