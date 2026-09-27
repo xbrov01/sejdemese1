@@ -44,13 +44,15 @@ if [ ! -d "$ANDROID_HOME/cmdline-tools/latest" ]; then
     
     echo "Accepting licenses and installing SDK packages..."
     yes | sdkmanager --licenses > /dev/null
-    sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+    # Install platform 36, and install build-tools (falling back to 35.0.0 if 36.0.0 is not in repo)
+    sdkmanager "platform-tools" "platforms;android-36" "build-tools;35.0.0" || sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 else
     echo "Android SDK already present."
 fi
 
-# Return to project root
-cd /workspaces/sejdemese
+# Return to project root dynamically based on script directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
 
 
 echo "=== 3. Building Web Assets & Syncing Capacitor ==="
@@ -61,7 +63,7 @@ npx cap sync android
 echo "=== 4. Granting Permissions and Compiling Debug APK ==="
 cd android
 chmod +x gradlew
-./gradlew assembleDebug
+./gradlew assembleDebug --no-daemon
 
 echo "=== Build Complete! ==="
 echo "Your APK is located at: android/app/build/outputs/apk/debug/app-debug.apk"
