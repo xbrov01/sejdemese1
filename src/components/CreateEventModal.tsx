@@ -145,11 +145,11 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-100">
+    <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden text-white">
         
         {/* Header */}
-        <div className="bg-slate-900 px-6 py-4 text-white flex items-center justify-between">
+        <div className="bg-slate-950 px-6 py-4 text-white flex items-center justify-between border-b border-slate-800">
           <div className="flex items-center space-x-2">
             {isEditing ? (
               <Pencil className="w-5 h-5 text-emerald-400" />
@@ -165,15 +165,15 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white p-1 rounded-lg transition cursor-pointer">
-            <X className="w-5 h-5" />
+          <button onClick={onClose} className="p-2 bg-slate-800 hover:bg-slate-750 text-slate-400 hover:text-white rounded-xl transition cursor-pointer">
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl">
+            <div className="p-3 bg-rose-950/80 text-rose-300 text-xs rounded-xl font-medium">
               {error}
             </div>
           )}
@@ -181,7 +181,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
           {/* Team selector if multiple teams available and not editing */}
           {teams.length > 1 && !isEditing && (
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
                 Tým
               </label>
               <div className="relative">
@@ -189,10 +189,10 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                 <select
                   value={selectedTeamId}
                   onChange={(e) => setSelectedTeamId(e.target.value)}
-                  className="w-full pl-10 pr-3.5 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
+                  className="w-full pl-10 pr-3.5 py-2.5 bg-slate-800 text-white rounded-xl text-sm focus:ring-2 focus:ring-emerald-400 outline-none"
                 >
                   {teams.map((t) => (
-                    <option key={t.id} value={t.id}>
+                    <option key={t.id} value={t.id} className="bg-slate-800 text-white">
                       {t.name} (#{t.code})
                     </option>
                   ))}
@@ -202,7 +202,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
           )}
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+            <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
               Název události / tréninku
             </label>
             <div className="relative">
@@ -213,14 +213,14 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                 placeholder="např. Středeční ligový zápas, Trénink..."
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full pl-10 pr-3.5 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                className="w-full pl-10 pr-3.5 py-2.5 bg-slate-800 text-white placeholder-slate-500 rounded-xl text-sm focus:ring-2 focus:ring-emerald-400 outline-none"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
                 Datum
               </label>
               <div className="relative">
@@ -230,13 +230,13 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                   required
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-full pl-9 pr-2 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className="w-full pl-9 pr-2 py-2.5 bg-slate-800 text-white rounded-xl text-sm focus:ring-2 focus:ring-emerald-400 outline-none"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
                 Čas začátku
               </label>
               <div className="relative">
@@ -246,7 +246,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                   required
                   value={time}
                   onChange={(e) => setTime(e.target.value)}
-                  className="w-full pl-9 pr-2 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className="w-full pl-9 pr-2 py-2.5 bg-slate-800 text-white rounded-xl text-sm focus:ring-2 focus:ring-emerald-400 outline-none"
                 />
               </div>
             </div>
@@ -254,7 +254,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
 
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
                 Místo konání
               </label>
               <span className="text-[11px] text-slate-400 font-normal">Nepovinné</span>
@@ -266,18 +266,18 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                 placeholder="např. Hala Na Fialce, Hřiště 2 (nevyplňujte, pokud není určeno)"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
-                className="w-full pl-10 pr-3.5 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                className="w-full pl-10 pr-3.5 py-2.5 bg-slate-800 text-white placeholder-slate-500 rounded-xl text-sm focus:ring-2 focus:ring-emerald-400 outline-none"
               />
             </div>
           </div>
 
           {/* Týmová připomenutí (rozeslání členům) */}
-          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-            <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-1 flex items-center">
-              <Bell className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
+          <div className="bg-slate-850 p-3 rounded-xl">
+            <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-1 flex items-center">
+              <Bell className="w-3.5 h-3.5 mr-1.5 text-emerald-400" />
               Týmová připomenutí před akcí
             </label>
-            <p className="text-[11px] text-slate-500 mb-2">
+            <p className="text-[11px] text-slate-400 mb-2">
               Vyberte, kdy obdrží členové týmu automatické připomenutí této akce:
             </p>
             <div className="flex flex-wrap gap-1.5">
@@ -295,10 +295,10 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                     key={opt.hours}
                     type="button"
                     onClick={() => toggleReminderOption(opt.hours)}
-                    className={`px-2.5 py-1 text-xs font-medium rounded-lg transition cursor-pointer ${
+                    className={`px-2.5 py-1 text-xs font-bold rounded-lg transition cursor-pointer ${
                       isSelected
-                        ? 'bg-emerald-600 text-white shadow-2xs font-semibold'
-                        : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                        ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                        : 'bg-slate-800 text-slate-300 hover:bg-slate-750'
                     }`}
                   >
                     {isSelected ? '✓ ' : '+ '}
@@ -313,14 +313,14 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-2.5 border border-slate-300 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 transition text-sm cursor-pointer"
+              className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-750 active:bg-slate-700 text-slate-200 font-bold rounded-xl transition text-sm cursor-pointer"
             >
               Zrušit
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold rounded-xl shadow-md text-sm transition flex items-center justify-center space-x-1.5 cursor-pointer disabled:opacity-50"
+              className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 font-black rounded-xl shadow-md text-sm transition flex items-center justify-center space-x-1.5 cursor-pointer disabled:opacity-50"
             >
               {isEditing ? (
                 <>
@@ -329,7 +329,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                 </>
               ) : (
                 <>
-                  <Plus className="w-4 h-4" />
+                  <Plus className="w-4 h-4 stroke-[3]" />
                   <span>{loading ? 'Vytváření...' : 'Vytvořit událost'}</span>
                 </>
               )}

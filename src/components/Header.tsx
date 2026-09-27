@@ -86,8 +86,8 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="bg-slate-900 text-white sticky top-0 z-40 shadow-md border-b border-slate-800">
-      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-1.5 sm:py-2">
+    <header className="bg-slate-950 text-white sticky top-0 z-40 shadow-xl border-b border-slate-800">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-2">
         <div className="flex items-center justify-between gap-1 sm:gap-2 md:gap-3 min-w-0">
           
           {/* LEVÁ ČÁST: Ikona aplikace & Výběr týmu / Dashboardu (v jedné řadě) */}
@@ -97,28 +97,28 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               type="button"
               onClick={handleSelectAllAndClose}
-              className="shrink-0 p-0.5 rounded-xl hover:ring-2 hover:ring-emerald-500/40 transition cursor-pointer"
+              className="shrink-0 p-0.5 rounded-xl hover:scale-105 active:scale-95 transition cursor-pointer"
               title="Sejdeme se - souhrnný přehled"
             >
               <img
                 src="/icon.svg"
                 alt="Sejdeme se"
                 referrerPolicy="no-referrer"
-                className="w-7 h-7 min-[380px]:w-8 min-[380px]:h-8 sm:w-9 sm:h-9 rounded-xl shadow-md shadow-emerald-500/20 shrink-0 object-cover border border-slate-700/80"
+                className="w-7 h-7 min-[380px]:w-8 min-[380px]:h-8 sm:w-9 sm:h-9 rounded-xl shadow-md shadow-emerald-500/20 shrink-0 object-cover"
               />
             </button>
 
-            {/* Přepínač aktivního týmu / Dashboardu */}
+            {/* Přepínač aktivního týmu / Dashboardu (solid button, no outline) */}
             {teams.length > 0 ? (
               <div className="relative min-w-0" ref={teamMenuRef}>
                 <button
                   type="button"
                   onClick={() => setIsTeamMenuOpen(!isTeamMenuOpen)}
                   aria-expanded={isTeamMenuOpen}
-                  className={`flex items-center border rounded-xl px-2 py-1 sm:px-2.5 sm:py-1.5 transition cursor-pointer select-none text-left max-w-full ${
+                  className={`flex items-center rounded-xl px-2.5 py-1.5 transition cursor-pointer select-none text-left max-w-full shadow-xs ${
                     isTeamMenuOpen
-                      ? 'bg-slate-800 border-emerald-500/70 ring-2 ring-emerald-500/20 shadow-md'
-                      : 'bg-slate-800/90 hover:bg-slate-800 border-slate-700/80 active:bg-slate-700'
+                      ? 'bg-slate-800 text-white shadow-md'
+                      : 'bg-slate-850 hover:bg-slate-800 active:bg-slate-700 text-slate-200'
                   }`}
                   title="Přepnout aktivní tým nebo přehled"
                 >
@@ -138,14 +138,14 @@ export const Header: React.FC<HeaderProps> = ({
                 {/* Mobilní překryvná clona pro bezpečné zavření kliknutím mimo */}
                 {isTeamMenuOpen && (
                   <div
-                    className="fixed inset-0 z-40 bg-black/40 sm:hidden backdrop-blur-xs"
+                    className="fixed inset-0 z-40 bg-black/50 sm:hidden backdrop-blur-xs"
                     onClick={() => setIsTeamMenuOpen(false)}
                   />
                 )}
 
-                {/* Dropdown menu pro přepínání týmů */}
+                {/* Dropdown menu pro přepínání týmu */}
                 {isTeamMenuOpen && (
-                  <div className="fixed inset-x-3 top-14 max-w-sm mx-auto sm:static sm:max-w-none sm:mx-0 sm:absolute sm:inset-x-auto sm:top-full sm:left-0 sm:mt-2 sm:w-72 bg-slate-900 border border-slate-700/90 rounded-2xl shadow-2xl py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="fixed inset-x-3 top-14 max-w-sm mx-auto sm:static sm:max-w-none sm:mx-0 sm:absolute sm:inset-x-auto sm:top-full sm:left-0 sm:mt-2 sm:w-72 bg-slate-900 rounded-2xl shadow-2xl py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
                     <div className="px-3.5 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800 flex items-center justify-between">
                       <span>Výběr týmu / přehled</span>
                       <span className="text-[9px] bg-slate-800 text-emerald-400 px-1.5 py-0.5 rounded font-mono">
@@ -160,25 +160,25 @@ export const Header: React.FC<HeaderProps> = ({
                         onClick={handleSelectAllAndClose}
                         className={`w-full text-left px-3 py-2.5 rounded-xl text-xs flex items-center justify-between transition cursor-pointer ${
                           isAllTeamsSelected
-                            ? 'bg-emerald-600 text-white font-bold shadow-sm'
-                            : 'text-slate-200 hover:bg-slate-800 active:bg-slate-700'
+                            ? 'bg-emerald-500 text-slate-950 font-black shadow-sm'
+                            : 'bg-slate-800/80 hover:bg-slate-750 text-slate-200 active:bg-slate-700'
                         }`}
                       >
                         <div className="flex items-center space-x-2.5">
-                          <LayoutDashboard className={`w-4 h-4 shrink-0 ${isAllTeamsSelected ? 'text-white' : 'text-emerald-400'}`} />
+                          <LayoutDashboard className={`w-4 h-4 shrink-0 ${isAllTeamsSelected ? 'text-slate-950' : 'text-emerald-400'}`} />
                           <div>
                             <div className="font-semibold leading-tight">Všechny mé týmy</div>
-                            <div className={`text-[10px] ${isAllTeamsSelected ? 'text-emerald-100' : 'text-slate-400'}`}>
+                            <div className={`text-[10px] ${isAllTeamsSelected ? 'text-slate-900' : 'text-slate-400'}`}>
                               Souhrnný přehled událostí
                             </div>
                           </div>
                         </div>
-                        {isAllTeamsSelected && <Check className="w-4 h-4 text-white shrink-0" />}
+                        {isAllTeamsSelected && <Check className="w-4 h-4 text-slate-950 shrink-0 stroke-[3]" />}
                       </button>
                     </div>
 
                     {/* Seznam týmů */}
-                    <div className="max-h-64 overflow-y-auto p-1 space-y-0.5">
+                    <div className="max-h-64 overflow-y-auto p-1 space-y-1">
                       {teams.map((team) => {
                         const isSelected = !isAllTeamsSelected && activeTeam?.id === team.id;
                         return (
@@ -188,32 +188,32 @@ export const Header: React.FC<HeaderProps> = ({
                             onClick={() => handleSelectTeamAndClose(team)}
                             className={`w-full text-left px-3 py-2.5 rounded-xl text-xs flex items-center justify-between transition cursor-pointer ${
                               isSelected
-                                ? 'bg-emerald-600/20 border border-emerald-500/40 text-emerald-300 font-bold'
-                                : 'text-slate-300 hover:bg-slate-800/80 active:bg-slate-700 border border-transparent'
+                                ? 'bg-emerald-500/20 text-emerald-300 font-bold'
+                                : 'bg-slate-850 hover:bg-slate-800 text-slate-300 active:bg-slate-750'
                             }`}
                           >
                             <div className="truncate pr-2">
-                              <div className="font-medium text-slate-100 truncate">{team.name}</div>
+                              <div className="font-semibold text-slate-100 truncate">{team.name}</div>
                               <div className="text-[10px] text-slate-400 font-mono">
                                 #{team.code} • {team.memberEmails?.length || 1} členů
                               </div>
                             </div>
                             {isSelected ? (
-                              <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+                              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0" />
                             ) : null}
                           </button>
                         );
                       })}
                     </div>
 
-                    {/* Spodní akce týmu */}
-                    <div className="border-t border-slate-800 p-1 mt-1 space-y-0.5 bg-slate-950/40 rounded-b-xl">
+                    {/* Spodní akce týmu (solid buttons, no outline) */}
+                    <div className="border-t border-slate-800 p-1.5 mt-1 space-y-1 bg-slate-950/40 rounded-b-xl">
                       <button
                         type="button"
                         onClick={() => handleActionAndClose(onOpenJoinTeam)}
-                        className="w-full text-left px-3 py-2 text-xs text-emerald-400 hover:bg-slate-800/80 active:bg-slate-700 rounded-lg flex items-center transition cursor-pointer"
+                        className="w-full text-left px-3 py-2 text-xs font-semibold text-emerald-300 bg-slate-800 hover:bg-slate-750 active:bg-slate-700 rounded-xl flex items-center transition cursor-pointer"
                       >
-                        <Key className="w-3.5 h-3.5 mr-2 shrink-0" />
+                        <Key className="w-3.5 h-3.5 mr-2 shrink-0 text-emerald-400" />
                         <span>Připojit k týmu pomocí kódu</span>
                       </button>
 
@@ -222,18 +222,18 @@ export const Header: React.FC<HeaderProps> = ({
                           <button
                             type="button"
                             onClick={() => handleActionAndClose(onOpenCreateTeam)}
-                            className="w-full text-left px-3 py-2 text-xs text-teal-400 hover:bg-slate-800/80 active:bg-slate-700 rounded-lg flex items-center transition cursor-pointer"
+                            className="w-full text-left px-3 py-2 text-xs font-semibold text-teal-300 bg-slate-800 hover:bg-slate-750 active:bg-slate-700 rounded-xl flex items-center transition cursor-pointer"
                           >
-                            <Plus className="w-3.5 h-3.5 mr-2 shrink-0" />
+                            <Plus className="w-3.5 h-3.5 mr-2 shrink-0 text-teal-400" />
                             <span>Vytvořit nový tým</span>
                           </button>
                           {activeTeam && onOpenTeamSettings && (
                             <button
                               type="button"
                               onClick={() => handleActionAndClose(onOpenTeamSettings)}
-                              className="w-full text-left px-3 py-2 text-xs text-purple-400 hover:bg-slate-800/80 active:bg-slate-700 rounded-lg flex items-center transition cursor-pointer"
+                              className="w-full text-left px-3 py-2 text-xs font-semibold text-purple-300 bg-slate-800 hover:bg-slate-750 active:bg-slate-700 rounded-xl flex items-center transition cursor-pointer"
                             >
-                              <Palette className="w-3.5 h-3.5 mr-2 shrink-0" />
+                              <Palette className="w-3.5 h-3.5 mr-2 shrink-0 text-purple-400" />
                               <span>Vzhled & styl aktivního týmu</span>
                             </button>
                           )}
@@ -244,22 +244,22 @@ export const Header: React.FC<HeaderProps> = ({
                 )}
               </div>
             ) : (
-              <div className="flex items-center space-x-1 sm:space-x-1.5">
+              <div className="flex items-center space-x-1.5">
                 <button
                   type="button"
                   onClick={onOpenJoinTeam}
-                  className="px-2 py-1 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-200 text-[11px] sm:text-xs font-medium rounded-xl border border-slate-700 flex items-center transition cursor-pointer"
+                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-750 active:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl flex items-center transition cursor-pointer"
                 >
-                  <Key className="w-3 h-3 sm:mr-1 text-emerald-400" />
+                  <Key className="w-3.5 h-3.5 sm:mr-1 text-emerald-400" />
                   <span className="hidden sm:inline">Připojit</span>
                 </button>
                 {isAdmin && (
                   <button
                     type="button"
                     onClick={onOpenCreateTeam}
-                    className="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white text-[11px] sm:text-xs font-medium rounded-xl flex items-center transition shadow-sm cursor-pointer"
+                    className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 text-xs font-black rounded-xl flex items-center transition shadow-sm cursor-pointer"
                   >
-                    <Plus className="w-3 h-3 sm:mr-1" />
+                    <Plus className="w-3.5 h-3.5 sm:mr-1" />
                     <span className="hidden sm:inline">Vytvořit</span>
                   </button>
                 )}
@@ -267,22 +267,22 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </div>
 
-          {/* PRAVÁ ČÁST: Všechny akční a uživatelské prvky v jedné řadě */}
-          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 ml-auto">
+          {/* PRAVÁ ČÁST: Všechny akční a uživatelské prvky v jedné řadě (solid buttons, no outlines) */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 ml-auto">
             
             {/* Akce administrátora pro události a tým */}
             {isAdmin && (activeTeam || (isAllTeamsSelected && teams.length > 0)) && (
               <>
-                {/* Tlačítko Vytvořit událost */}
+                {/* Tlačítko Vytvořit událost (solid neon green, no outline) */}
                 <button
                   type="button"
                   onClick={onOpenCreateEvent}
-                  className="p-1.5 sm:px-2.5 sm:py-1.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white text-[11px] sm:text-xs font-semibold rounded-xl flex items-center transition shadow-xs cursor-pointer"
+                  className="px-3 py-1.5 sm:px-3.5 sm:py-2 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 text-xs font-black rounded-xl flex items-center transition shadow-md shadow-emerald-950/40 cursor-pointer"
                   title="Vytvořit novou událost"
                 >
-                  <Plus className="w-3.5 h-3.5 sm:mr-1 stroke-[2.5]" />
-                  <span className="hidden sm:inline">Akce</span>
-                  <span className="hidden md:inline"> / Událost</span>
+                  <Plus className="w-4 h-4 sm:mr-1 stroke-[3]" />
+                  <span className="hidden sm:inline">Nová událost</span>
+                  <span className="sm:hidden font-bold">Nová</span>
                 </button>
 
                 {activeTeam && (
@@ -291,7 +291,7 @@ export const Header: React.FC<HeaderProps> = ({
                     <button
                       type="button"
                       onClick={onOpenTeamSettings || onOpenManageMembers}
-                      className="p-1.5 sm:px-2 sm:py-1.5 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-200 text-[11px] sm:text-xs font-medium rounded-xl border border-slate-700 flex items-center transition cursor-pointer"
+                      className="p-2 sm:px-2.5 sm:py-1.5 bg-slate-800 hover:bg-slate-750 active:bg-slate-700 text-purple-300 text-xs font-semibold rounded-xl flex items-center transition cursor-pointer"
                       title="Změnit vzhled, barvu nebo pozadí karty události"
                     >
                       <Palette className="w-3.5 h-3.5 sm:mr-1 text-purple-400" />
@@ -302,7 +302,7 @@ export const Header: React.FC<HeaderProps> = ({
                     <button
                       type="button"
                       onClick={onOpenManageMembers}
-                      className="p-1.5 sm:px-2 sm:py-1.5 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-200 text-[11px] sm:text-xs font-medium rounded-xl border border-slate-700 flex items-center transition cursor-pointer"
+                      className="p-2 sm:px-2.5 sm:py-1.5 bg-slate-800 hover:bg-slate-750 active:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl flex items-center transition cursor-pointer"
                       title="Správa členů týmu"
                     >
                       <Settings className="w-3.5 h-3.5 sm:mr-1 text-slate-400" />
@@ -313,29 +313,29 @@ export const Header: React.FC<HeaderProps> = ({
               </>
             )}
 
-            {/* Notifikační zvonek */}
+            {/* Notifikační zvonek (solid button, no outline) */}
             <button
               type="button"
               onClick={onOpenNotifications}
-              className="relative p-1.5 sm:p-1.5 text-slate-300 hover:text-white bg-slate-800/90 hover:bg-slate-800 active:bg-slate-700 rounded-xl transition border border-slate-700/80 cursor-pointer"
+              className="relative p-2 text-emerald-400 hover:text-white bg-slate-800 hover:bg-slate-750 active:bg-slate-700 rounded-xl transition cursor-pointer"
               title="Notifikace a připomenutí"
             >
-              <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
+              <Bell className="w-4 h-4" />
               {unreadNotificationCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[9px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center shadow-xs animate-pulse">
+                <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-xs animate-pulse">
                   {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
                 </span>
               )}
             </button>
 
-            {/* Profil uživatele */}
+            {/* Profil uživatele (solid button, no outline) */}
             <button
               type="button"
               onClick={onOpenProfile}
-              className="flex items-center gap-1 sm:gap-1.5 p-1 sm:px-2 sm:py-1 rounded-xl hover:bg-slate-800 active:bg-slate-700 transition text-left border border-slate-700/80 bg-slate-800/60 cursor-pointer"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-750 active:bg-slate-700 transition text-left cursor-pointer"
               title="Upravit můj profil & nastavení notifikací a písma"
             >
-              <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold text-[10px] sm:text-xs shrink-0">
+              <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-black text-[11px] sm:text-xs shrink-0">
                 {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
               </div>
               <span className="text-[11px] sm:text-xs font-semibold text-slate-200 max-w-[55px] min-[400px]:max-w-[75px] min-[520px]:max-w-[110px] sm:max-w-[140px] truncate hidden min-[360px]:inline-block">
@@ -348,14 +348,14 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </button>
 
-            {/* Tlačítko odhlášení */}
+            {/* Tlačítko odhlášení (solid button, no outline) */}
             <button
               type="button"
               onClick={onSignOut}
-              className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-800 active:bg-slate-700 rounded-xl transition border border-transparent hover:border-slate-700 cursor-pointer"
+              className="p-2 text-slate-400 hover:text-rose-400 bg-slate-800 hover:bg-slate-750 active:bg-slate-700 rounded-xl transition cursor-pointer"
               title="Odhlásit se"
             >
-              <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <LogOut className="w-4 h-4" />
             </button>
 
           </div>

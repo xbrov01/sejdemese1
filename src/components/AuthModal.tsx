@@ -106,11 +106,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onLoginSuccess }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-100 overflow-hidden">
+    <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-4">
+      <div className="bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden text-slate-100">
         {/* Header */}
-        <div className="bg-gradient-to-r from-emerald-600 to-teal-700 p-6 text-white text-center">
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-black/20 overflow-hidden bg-slate-900 border border-emerald-400/30">
+        <div className="bg-slate-950 p-6 text-white text-center border-b border-slate-800">
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-xl overflow-hidden bg-slate-900">
             <img
               src="/icon.svg"
               alt="Sejdeme se icon"
@@ -118,24 +118,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onLoginSuccess }) => {
               className="w-full h-full object-cover"
             />
           </div>
-          <h2 className="text-2xl font-bold tracking-tight">Sejdeme se</h2>
-          <p className="text-emerald-100 text-sm mt-1">
+          <h2 className="text-2xl font-black tracking-tight text-white">Sejdeme se</h2>
+          <p className="text-slate-400 text-xs mt-1">
             {authMode === 'login' ? 'Přihlášení do týmové docházky' : 'Registrace nového člena nebo správce'}
           </p>
         </div>
 
         {/* Navigation Tabs (Přihlášení / Registrace) */}
-        <div className="flex border-b border-slate-200 bg-slate-50/80 p-1.5">
+        <div className="flex bg-slate-950 p-1.5 gap-1.5 border-b border-slate-800">
           <button
             type="button"
             onClick={() => {
               setAuthMode('login');
               setError(null);
             }}
-            className={`flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl flex items-center justify-center gap-2 transition ${
+            className={`flex-1 py-2 text-xs sm:text-sm font-bold rounded-xl flex items-center justify-center gap-2 transition cursor-pointer ${
               authMode === 'login'
-                ? 'bg-white text-emerald-700 shadow-sm border border-slate-200/80'
-                : 'text-slate-500 hover:text-slate-900'
+                ? 'bg-emerald-500 text-slate-950 font-black shadow-md'
+                : 'bg-slate-850 hover:bg-slate-800 text-slate-300'
             }`}
           >
             <LogIn className="w-4 h-4" />
@@ -147,10 +147,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onLoginSuccess }) => {
               setAuthMode('register');
               setError(null);
             }}
-            className={`flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl flex items-center justify-center gap-2 transition ${
+            className={`flex-1 py-2 text-xs sm:text-sm font-bold rounded-xl flex items-center justify-center gap-2 transition cursor-pointer ${
               authMode === 'register'
-                ? 'bg-white text-emerald-700 shadow-sm border border-slate-200/80'
-                : 'text-slate-500 hover:text-slate-900'
+                ? 'bg-emerald-500 text-slate-950 font-black shadow-md'
+                : 'bg-slate-850 hover:bg-slate-800 text-slate-300'
             }`}
           >
             <UserPlus className="w-4 h-4" />
@@ -159,9 +159,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onLoginSuccess }) => {
         </div>
 
         {/* Content */}
-        <div className="p-6">
+        <div className="p-6 bg-slate-900">
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl">
+            <div className="mb-4 p-3 bg-rose-950/80 text-rose-300 text-xs rounded-xl font-medium">
               {error}
             </div>
           )}
@@ -170,34 +170,34 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onLoginSuccess }) => {
             /* FORMULÁŘ PRO PŘIHLÁŠENÍ */
             <form onSubmit={handleLoginSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                  E-mailová adresa <span className="text-red-500">*</span>
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                  E-mailová adresa <span className="text-emerald-400">*</span>
                 </label>
                 <div className="relative">
-                  <Mail className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <Mail className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                   <input
                     type="email"
                     required
                     placeholder="jan.novak@email.cz"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-slate-900 text-sm transition"
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-800 rounded-xl focus:ring-2 focus:ring-emerald-400 text-white text-sm transition outline-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
                   Heslo
                 </label>
                 <div className="relative">
-                  <Lock className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <Lock className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                   <input
                     type="password"
                     placeholder="Zadejte své heslo (pokud máte nastavené)"
                     value={passwordInput}
                     onChange={(e) => setPasswordInput(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-slate-900 text-sm transition"
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-800 rounded-xl focus:ring-2 focus:ring-emerald-400 text-white text-sm transition outline-none"
                   />
                 </div>
               </div>
@@ -205,7 +205,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onLoginSuccess }) => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-xl shadow-lg shadow-emerald-600/20 flex items-center justify-center space-x-2 transition disabled:opacity-50 mt-2"
+                className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 font-black rounded-xl shadow-lg shadow-emerald-500/20 flex items-center justify-center space-x-2 transition disabled:opacity-50 mt-2 cursor-pointer"
               >
                 <span>{loading ? 'Přihlašování...' : 'Přihlásit se'}</span>
                 <ArrowRight className="w-4 h-4" />
@@ -218,9 +218,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onLoginSuccess }) => {
                     setAuthMode('register');
                     setError(null);
                   }}
-                  className="text-xs text-slate-500 hover:text-emerald-700 transition"
+                  className="text-xs text-slate-400 hover:text-emerald-400 transition cursor-pointer"
                 >
-                  Nemáte ještě účet? <strong className="underline">Zaregistrujte se zde</strong>
+                  Nemáte ještě účet? <strong className="underline text-emerald-400">Zaregistrujte se zde</strong>
                 </button>
               </div>
             </form>
@@ -228,90 +228,94 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onLoginSuccess }) => {
             /* FORMULÁŘ PRO REGISTRACI */
             <form onSubmit={handleRegisterSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                  E-mailová adresa <span className="text-red-500">*</span>
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                  E-mailová adresa <span className="text-emerald-400">*</span>
                 </label>
                 <div className="relative">
-                  <Mail className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <Mail className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                   <input
                     type="email"
                     required
                     placeholder="jan.novak@email.cz"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-slate-900 text-sm transition"
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-800 rounded-xl focus:ring-2 focus:ring-emerald-400 text-white text-sm transition outline-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                  Jméno a příjmení <span className="text-red-500">*</span>
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                  Jméno a příjmení <span className="text-emerald-400">*</span>
                 </label>
                 <div className="relative">
-                  <User className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <User className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                   <input
                     type="text"
                     required
                     placeholder="např. Jan Novák"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-slate-900 text-sm transition"
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-800 rounded-xl focus:ring-2 focus:ring-emerald-400 text-white text-sm transition outline-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
                   Heslo (volitelné)
                 </label>
                 <div className="relative">
-                  <Lock className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <Lock className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                   <input
                     type="password"
                     placeholder="Zvolte heslo pro přihlášení..."
                     value={passwordInput}
                     onChange={(e) => setPasswordInput(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-slate-900 text-sm transition"
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-800 rounded-xl focus:ring-2 focus:ring-emerald-400 text-white text-sm transition outline-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
                   Uživatelská role v aplikaci
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
                     onClick={() => setRole('member')}
-                    className={`p-3 rounded-xl border text-left flex flex-col justify-between transition ${
+                    className={`p-3 rounded-xl text-left flex flex-col justify-between transition cursor-pointer ${
                       role === 'member'
-                        ? 'border-emerald-500 bg-emerald-50/50 text-emerald-900 ring-2 ring-emerald-500/20'
-                        : 'border-slate-200 hover:bg-slate-50 text-slate-700'
+                        ? 'bg-emerald-500 text-slate-950 font-black shadow-md'
+                        : 'bg-slate-800 hover:bg-slate-750 text-slate-300'
                     }`}
                   >
                     <div className="flex items-center space-x-2">
-                      <User className="w-4 h-4 text-emerald-600" />
-                      <span className="font-semibold text-sm">Běžný hráč</span>
+                      <User className="w-4 h-4" />
+                      <span className="font-bold text-sm">Běžný hráč</span>
                     </div>
-                    <span className="text-xs text-slate-500 mt-1">Člen týmu & docházka</span>
+                    <span className={`text-xs mt-1 ${role === 'member' ? 'text-slate-950/80 font-medium' : 'text-slate-400'}`}>
+                      Člen týmu & docházka
+                    </span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setRole('admin')}
-                    className={`p-3 rounded-xl border text-left flex flex-col justify-between transition ${
+                    className={`p-3 rounded-xl text-left flex flex-col justify-between transition cursor-pointer ${
                       role === 'admin'
-                        ? 'border-emerald-500 bg-emerald-50/50 text-emerald-900 ring-2 ring-emerald-500/20'
-                        : 'border-slate-200 hover:bg-slate-50 text-slate-700'
+                        ? 'bg-emerald-500 text-slate-950 font-black shadow-md'
+                        : 'bg-slate-800 hover:bg-slate-750 text-slate-300'
                     }`}
                   >
                     <div className="flex items-center space-x-2">
-                      <Shield className="w-4 h-4 text-emerald-600" />
-                      <span className="font-semibold text-sm">Správce</span>
+                      <Shield className="w-4 h-4" />
+                      <span className="font-bold text-sm">Správce</span>
                     </div>
-                    <span className="text-xs text-slate-500 mt-1">Vytváření týmů & událostí</span>
+                    <span className={`text-xs mt-1 ${role === 'admin' ? 'text-slate-950/80 font-medium' : 'text-slate-400'}`}>
+                      Vytváření týmů & událostí
+                    </span>
                   </button>
                 </div>
               </div>
@@ -319,7 +323,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onLoginSuccess }) => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-xl shadow-lg shadow-emerald-600/20 flex items-center justify-center space-x-2 transition disabled:opacity-50 mt-2"
+                className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 font-black rounded-xl shadow-lg shadow-emerald-500/20 flex items-center justify-center space-x-2 transition disabled:opacity-50 mt-2 cursor-pointer"
               >
                 <span>{loading ? 'Vytváření účtu...' : 'Vytvořit účet a vstoupit'}</span>
                 <ArrowRight className="w-4 h-4" />
@@ -332,9 +336,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onLoginSuccess }) => {
                     setAuthMode('login');
                     setError(null);
                   }}
-                  className="text-xs text-slate-500 hover:text-emerald-700 transition"
+                  className="text-xs text-slate-400 hover:text-emerald-400 transition cursor-pointer"
                 >
-                  Již máte účet? <strong className="underline">Přihlaste se zde</strong>
+                  Již máte účet? <strong className="underline text-emerald-400">Přihlaste se zde</strong>
                 </button>
               </div>
             </form>

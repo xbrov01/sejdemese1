@@ -24,7 +24,7 @@ import { checkAndGenerateReminders, showBrowserNotification, sendEventCancelledN
 import { getMemberDisplayName } from './utils/userUtils';
 import { applyAppFontSize, getInitialFontSize } from './utils/fontSizeUtils';
 import { setupNativeStatusBar, initPushNotifications, setupAndroidBackButton } from './lib/capacitor';
-import { Calendar, Plus, RefreshCw, ShieldAlert, Sparkles, Users, Key, Palette, History, ChevronDown, ChevronUp, LayoutDashboard } from 'lucide-react';
+import { Calendar, Plus, RefreshCw, ShieldAlert, Sparkles, Users, Key, Palette, History, ChevronDown, ChevronUp, LayoutDashboard, Bell } from 'lucide-react';
 
 const LOCAL_STORAGE_USER_KEY = 'sejdemese_active_user_email';
 const PUSHED_NOTIFICATIONS_STORAGE_KEY = 'sejdemese_pushed_notif_ids';
@@ -481,7 +481,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900 flex flex-col font-sans">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-slate-950 pb-20 sm:pb-8">
       
       {/* Header */}
       {currentUser && (
@@ -509,18 +509,18 @@ export default function App() {
         {currentUser ? (
           <>
             {teams.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center max-w-lg mx-auto shadow-sm my-6">
-                <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
+              <div className="bg-slate-900 rounded-2xl p-8 text-center max-w-lg mx-auto shadow-2xl my-6">
+                <div className="w-12 h-12 bg-emerald-500/20 text-emerald-400 rounded-2xl flex items-center justify-center mx-auto mb-3">
                   <Users className="w-6 h-6" />
                 </div>
-                <h3 className="text-lg font-bold text-slate-800">Vyberte nebo se připojte k týmu</h3>
-                <p className="text-xs text-slate-500 mt-1 mb-5">
+                <h3 className="text-lg font-bold text-white">Vyberte nebo se připojte k týmu</h3>
+                <p className="text-xs text-slate-400 mt-1 mb-5">
                   Pro zobrazení docházky a plánovaných událostí se připojte k týmu pomocí kódu nebo vytvořte nový tým.
                 </p>
                 <div className="flex flex-wrap justify-center gap-2">
                   <button
                     onClick={() => setTeamModalMode('join')}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl flex items-center gap-1.5 shadow-sm transition cursor-pointer"
+                    className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-md transition cursor-pointer"
                   >
                     <Key className="w-3.5 h-3.5" />
                     <span>Připojit se k týmu</span>
@@ -528,7 +528,7 @@ export default function App() {
                   {currentUser.role === 'admin' && (
                     <button
                       onClick={() => setTeamModalMode('create')}
-                      className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs rounded-xl flex items-center gap-1.5 transition cursor-pointer"
+                      className="px-4 py-2.5 bg-slate-800 hover:bg-slate-750 text-slate-200 font-bold text-xs rounded-xl flex items-center gap-1.5 transition cursor-pointer"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       <span>Vytvořit nový tým</span>
@@ -539,25 +539,25 @@ export default function App() {
             ) : isAllTeamsSelected ? (
               /* ================== PŘEHLED / DASHBOARD: VŠECHNY TÝMY ================== */
               <div className="space-y-6">
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="bg-slate-900 p-5 rounded-2xl shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>
-                    <div className="text-[10px] uppercase font-bold text-emerald-600 tracking-wider flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <div className="text-[10px] uppercase font-bold text-emerald-400 tracking-wider flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                       Úvodní přehled • Všechny mé týmy ({teams.length})
                     </div>
-                    <h2 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2 mt-0.5">
+                    <h2 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2 mt-0.5">
                       Nadcházející události
-                      <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                      <span className="text-xs font-black text-slate-950 bg-emerald-400 px-2.5 py-0.5 rounded-full">
                         {upcomingEvents.length} {upcomingEvents.length === 1 ? 'událost' : upcomingEvents.length >= 2 && upcomingEvents.length <= 4 ? 'události' : 'událostí'}
                       </span>
                     </h2>
-                    <p className="text-xs text-slate-500 mt-1">
+                    <p className="text-xs text-slate-400 mt-1">
                       Kompletní přehled tréninků a zápasů napříč všemi vašimi týmy.
                     </p>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
-                    {/* Rychlý přepínač týmu (filtry pro dotyk i myš) */}
+                    {/* Rychlý přepínač týmu (filtry pro dotyk i myš - solid buttons, no outline) */}
                     <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full no-scrollbar">
                       <span className="text-[11px] font-semibold text-slate-400 mr-1 hidden sm:inline">
                         Přejít na tým:
@@ -567,7 +567,7 @@ export default function App() {
                           key={t.id}
                           type="button"
                           onClick={() => setActiveTeamId(t.id)}
-                          className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 text-xs rounded-xl font-semibold transition shrink-0 border border-slate-200/80 cursor-pointer shadow-2xs"
+                          className="px-3 py-1.5 bg-slate-800 hover:bg-slate-750 active:bg-slate-700 text-slate-200 text-xs rounded-xl font-bold transition shrink-0 cursor-pointer shadow-xs"
                         >
                           {t.name}
                         </button>
@@ -578,9 +578,9 @@ export default function App() {
                       <button
                         type="button"
                         onClick={seedDemoData}
-                        className="px-3.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 text-emerald-700 text-xs font-semibold rounded-xl border border-emerald-200 flex items-center space-x-1.5 transition cursor-pointer shadow-2xs"
+                        className="px-3.5 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-xs font-bold rounded-xl flex items-center space-x-1.5 transition cursor-pointer shadow-xs"
                       >
-                        <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                        <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
                         <span>Vložit ukázková data (Demo)</span>
                       </button>
                     )}
@@ -588,23 +588,23 @@ export default function App() {
                 </div>
 
                 {upcomingEvents.length === 0 ? (
-                  <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-12 text-center">
-                    <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                      <Calendar className="w-6 h-6 text-slate-400" />
+                  <div className="bg-slate-900 rounded-2xl p-12 text-center shadow-lg">
+                    <div className="w-12 h-12 bg-slate-800 text-slate-400 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                      <Calendar className="w-6 h-6" />
                     </div>
-                    <h4 className="text-base font-bold text-slate-800">
+                    <h4 className="text-base font-bold text-white">
                       Žádné nadcházející události
                     </h4>
-                    <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4">
+                    <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1 mb-4">
                       V žádném z vašich týmů zatím nejsou naplánovány žádné nadcházející tréninky ani zápasy.
                     </p>
 
                     {currentUser.role === 'admin' ? (
                       <button
                         onClick={() => setShowCreateEventModal(true)}
-                        className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs inline-flex items-center space-x-2 shadow-md transition cursor-pointer"
+                        className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 font-black rounded-xl text-xs inline-flex items-center space-x-2 shadow-md transition cursor-pointer"
                       >
-                        <Plus className="w-4 h-4" />
+                        <Plus className="w-4 h-4 stroke-[3]" />
                         <span>Vytvořit novou událost</span>
                       </button>
                     ) : (
@@ -637,15 +637,15 @@ export default function App() {
             ) : activeTeam ? (
               /* ================== JEDNOTLIVÝ TÝM ================== */
               <div className="space-y-6">
-                <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900 p-4 sm:p-5 rounded-2xl shadow-xl">
                   <div>
-                    <div className="text-[10px] uppercase font-bold text-emerald-600 tracking-wider">
+                    <div className="text-[10px] uppercase font-bold text-emerald-400 tracking-wider">
                       Aktivní tým #{activeTeam.code}
                     </div>
-                    <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 flex items-center gap-2">
-                      <Users className="w-5 h-5 text-slate-600" />
+                    <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2 mt-0.5">
+                      <Users className="w-5 h-5 text-emerald-400" />
                       {activeTeam.name}
-                      <span className="text-xs font-normal text-slate-500">
+                      <span className="text-xs font-normal text-slate-400">
                         ({activeTeam.memberEmails?.length || 1} členů)
                       </span>
                     </h2>
@@ -655,19 +655,19 @@ export default function App() {
                     <button
                       type="button"
                       onClick={() => setActiveTeamId('ALL')}
-                      className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 text-xs font-semibold rounded-xl transition border border-slate-200/80 cursor-pointer shadow-2xs flex items-center gap-1"
+                      className="px-3 py-1.5 bg-slate-800 hover:bg-slate-750 active:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl transition cursor-pointer shadow-xs flex items-center gap-1"
                     >
-                      <LayoutDashboard className="w-3.5 h-3.5 text-emerald-600" />
+                      <LayoutDashboard className="w-3.5 h-3.5 text-emerald-400" />
                       <span>← Zpět na Vše</span>
                     </button>
                     {currentUser.role === 'admin' && (
                       <button
                         type="button"
                         onClick={() => setTeamModalMode('settings')}
-                        className="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 active:bg-purple-200 text-purple-700 text-xs font-semibold rounded-xl border border-purple-200 flex items-center space-x-1.5 transition cursor-pointer shadow-2xs"
+                        className="px-3 py-1.5 bg-purple-900/70 hover:bg-purple-800 active:bg-purple-700 text-purple-200 text-xs font-bold rounded-xl flex items-center space-x-1.5 transition cursor-pointer shadow-xs"
                         title="Změnit výchozí barvu a obrázek pozadí karty události"
                       >
-                        <Palette className="w-3.5 h-3.5 text-purple-600" />
+                        <Palette className="w-3.5 h-3.5 text-purple-300" />
                         <span>Vzhled karet</span>
                       </button>
                     )}
@@ -675,9 +675,9 @@ export default function App() {
                       <button
                         type="button"
                         onClick={seedDemoData}
-                        className="px-3.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 text-emerald-700 text-xs font-semibold rounded-xl border border-emerald-200 flex items-center space-x-1.5 transition cursor-pointer shadow-2xs"
+                        className="px-3.5 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-xs font-bold rounded-xl flex items-center space-x-1.5 transition cursor-pointer shadow-xs"
                       >
-                        <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                        <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
                         <span>Vložit ukázková data (Demo)</span>
                       </button>
                     )}
@@ -688,33 +688,33 @@ export default function App() {
                   {/* Nadcházející události */}
                   <div>
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
-                        <Calendar className="w-5 h-5 text-emerald-600" />
+                      <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                        <Calendar className="w-5 h-5 text-emerald-400" />
                         <span>Nadcházející události</span>
-                        <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                        <span className="text-xs font-black text-slate-950 bg-emerald-400 px-2.5 py-0.5 rounded-full">
                           {upcomingEvents.length} {upcomingEvents.length === 1 ? 'událost' : upcomingEvents.length >= 2 && upcomingEvents.length <= 4 ? 'události' : 'událostí'}
                         </span>
                       </h3>
                     </div>
 
                     {upcomingEvents.length === 0 ? (
-                      <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-10 text-center">
-                        <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                          <Calendar className="w-6 h-6 text-slate-400" />
+                      <div className="bg-slate-900 rounded-2xl p-10 text-center shadow-lg">
+                        <div className="w-12 h-12 bg-slate-800 text-slate-400 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                          <Calendar className="w-6 h-6" />
                         </div>
-                        <h4 className="text-base font-bold text-slate-800">
+                        <h4 className="text-base font-bold text-white">
                           Žádné nadcházející události
                         </h4>
-                        <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4">
+                        <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1 mb-4">
                           V tomto týmu zatím nejsou naplánovány žádné nadcházející tréninky ani zápasy.
                         </p>
 
                         {currentUser.role === 'admin' && (
                           <button
                             onClick={() => setShowCreateEventModal(true)}
-                            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs inline-flex items-center space-x-2 shadow-md transition cursor-pointer"
+                            className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 font-black rounded-xl text-xs inline-flex items-center space-x-2 shadow-md transition cursor-pointer"
                           >
-                            <Plus className="w-4 h-4" />
+                            <Plus className="w-4 h-4 stroke-[3]" />
                             <span>Vytvořit novou událost</span>
                           </button>
                         )}
@@ -738,82 +738,155 @@ export default function App() {
                   </div>
 
                   {/* Samostatný kolapsovaný panel pro uplynulé události na spodní části stránky */}
-                      <div className="bg-slate-100/90 rounded-2xl border border-slate-200/90 overflow-hidden shadow-2xs">
-                        <button
-                          type="button"
-                          onClick={() => setIsPastEventsExpanded(!isPastEventsExpanded)}
-                          className="w-full p-4 sm:p-5 flex items-center justify-between text-left hover:bg-slate-200/50 transition cursor-pointer"
-                        >
-                          <div className="flex items-center space-x-3">
-                            <div className="w-9 h-9 rounded-xl bg-slate-200 flex items-center justify-center text-slate-600 shrink-0">
-                              <History className="w-5 h-5" />
-                            </div>
-                            <div>
-                              <div className="flex items-center space-x-2">
-                                <h3 className="text-sm sm:text-base font-bold text-slate-800">
-                                  Uplynulé události
-                                </h3>
-                                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-slate-200 text-slate-700">
-                                  {pastEvents.length}
-                                </span>
-                              </div>
-                              <p className="text-xs text-slate-500 mt-0.5">
-                                Archiv proběhlých událostí (docházka a diskuze jsou uzavřeny)
-                              </p>
-                            </div>
+                  <div className="bg-slate-900 rounded-2xl overflow-hidden shadow-xl">
+                    <button
+                      type="button"
+                      onClick={() => setIsPastEventsExpanded(!isPastEventsExpanded)}
+                      className="w-full p-4 sm:p-5 flex items-center justify-between text-left bg-slate-850 hover:bg-slate-800 transition cursor-pointer"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center text-slate-300 shrink-0">
+                          <History className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <h3 className="text-sm sm:text-base font-bold text-white">
+                              Uplynulé události
+                            </h3>
+                            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-slate-800 text-slate-300">
+                              {pastEvents.length}
+                            </span>
                           </div>
+                          <p className="text-xs text-slate-400 mt-0.5">
+                            Archiv proběhlých událostí (docházka a diskuze jsou uzavřeny)
+                          </p>
+                        </div>
+                      </div>
 
-                          <div className="flex items-center space-x-1.5 text-xs font-semibold text-slate-600 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-2xs">
-                            <span>{isPastEventsExpanded ? 'Skrýt uplynulé' : 'Zobrazit uplynulé'}</span>
-                            {isPastEventsExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                          </div>
-                        </button>
+                      <div className="flex items-center space-x-1.5 text-xs font-bold text-slate-300 bg-slate-800 px-3 py-1.5 rounded-xl shadow-xs">
+                        <span>{isPastEventsExpanded ? 'Skrýt uplynulé' : 'Zobrazit uplynulé'}</span>
+                        {isPastEventsExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      </div>
+                    </button>
 
-                        {isPastEventsExpanded && (
-                          <div className="p-4 sm:p-5 pt-2 border-t border-slate-200 space-y-6 bg-slate-50/50">
-                            {pastEvents.length === 0 ? (
-                              <div className="text-center py-8 text-xs text-slate-400 italic">
-                                V tomto týmu zatím nejsou žádné uplynulé události.
-                              </div>
-                            ) : (
-                              pastEvents.map((event) => (
-                                <EventCard
-                                  key={event.id}
-                                  event={event}
-                                  currentUser={currentUser}
-                                  activeTeam={activeTeam}
-                                  allUsers={allUsers}
-                                  onDeleteEvent={handleDeleteEvent}
-                                  isPast={true}
-                                />
-                              ))
-                            )}
+                    {isPastEventsExpanded && (
+                      <div className="p-4 sm:p-5 pt-2 border-t border-slate-800 space-y-6 bg-slate-950/60">
+                        {pastEvents.length === 0 ? (
+                          <div className="text-center py-8 text-xs text-slate-400 italic">
+                            V tomto týmu zatím nejsou žádné uplynulé události.
                           </div>
+                        ) : (
+                          pastEvents.map((event) => (
+                            <EventCard
+                              key={event.id}
+                              event={event}
+                              currentUser={currentUser}
+                              activeTeam={activeTeam}
+                              allUsers={allUsers}
+                              onDeleteEvent={handleDeleteEvent}
+                              isPast={true}
+                            />
+                          ))
                         )}
                       </div>
-                    </div>
+                    )}
+                  </div>
+                </div>
               </div>
             ) : null}
           </>
         ) : (
           <div className="text-center py-20">
-            <h2 className="text-2xl font-bold text-slate-800">Přihlášení do aplikace</h2>
-            <p className="text-sm text-slate-500 mt-1">Zadejte své údaje v zobrazeném okně.</p>
+            <h2 className="text-2xl font-bold text-white">Přihlášení do aplikace</h2>
+            <p className="text-sm text-slate-400 mt-1">Zadejte své údaje v zobrazeném okně.</p>
           </div>
         )}
       </main>
 
-      {/* Footer bez uvozovek */}
-      <footer className="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-500">
+      {/* Footer */}
+      <footer className="bg-slate-950 border-t border-slate-850 py-6 text-center text-xs text-slate-400">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="font-semibold text-slate-700">
+          <div className="font-semibold text-slate-300">
             Sejdeme se — Týmová docházka & Realtime chat
           </div>
-          <div className="text-slate-400">
+          <div className="text-slate-500">
             Všechna data jsou ukládána do cloudové databáze Firebase Firestore
           </div>
         </div>
       </footer>
+
+      {/* Ergonomic Mobile Bottom Navigation Bar */}
+      {currentUser && (
+        <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 backdrop-blur-md border-t border-slate-800 px-3 py-2 flex items-center justify-around shadow-2xl">
+          <button
+            type="button"
+            onClick={() => setActiveTeamId('ALL')}
+            className={`flex flex-col items-center gap-1 py-1 px-3 rounded-xl transition cursor-pointer ${
+              isAllTeamsSelected ? 'bg-slate-800 text-emerald-400 font-bold' : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <LayoutDashboard className="w-5 h-5" />
+            <span className="text-[10px]">Přehled</span>
+          </button>
+
+          {teams.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                if (isAllTeamsSelected && teams[0]) {
+                  setActiveTeamId(teams[0].id);
+                } else {
+                  setTeamModalMode('members');
+                }
+              }}
+              className={`flex flex-col items-center gap-1 py-1 px-3 rounded-xl transition cursor-pointer ${
+                !isAllTeamsSelected ? 'bg-slate-800 text-emerald-400 font-bold' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Users className="w-5 h-5" />
+              <span className="text-[10px]">Tým</span>
+            </button>
+          )}
+
+          {currentUser.role === 'admin' && (
+            <button
+              type="button"
+              onClick={() => setShowCreateEventModal(true)}
+              className="bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 p-3 rounded-2xl shadow-lg shadow-emerald-500/30 flex items-center justify-center -mt-5 cursor-pointer font-black"
+              title="Vytvořit novou událost"
+            >
+              <Plus className="w-6 h-6 stroke-[3]" />
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setShowNotificationModal(true)}
+            className="flex flex-col items-center gap-1 py-1 px-3 rounded-xl text-slate-400 hover:text-emerald-400 transition cursor-pointer relative"
+          >
+            <div className="relative">
+              <Bell className="w-5 h-5" />
+              {unreadNotificationCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[9px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center shadow-xs animate-pulse">
+                  {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
+                </span>
+              )}
+            </div>
+            <span className="text-[10px]">Zprávy</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowUserProfileModal(true)}
+            className="flex flex-col items-center gap-1 py-1 px-3 rounded-xl text-slate-400 hover:text-white transition cursor-pointer"
+          >
+            <div className="w-5 h-5 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-[10px]">
+              {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+            </div>
+            <span className="text-[10px]">Profil</span>
+          </button>
+        </nav>
+      )}
 
       {/* Auth Modal */}
       {showAuthModal && (
