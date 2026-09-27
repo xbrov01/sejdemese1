@@ -79,6 +79,7 @@ export const EventCard: React.FC<EventCardProps> = ({
   const [sendingMsg, setSendingMsg] = useState(false);
   const [isChatExpanded, setIsChatExpanded] = useState(false);
   const [hasUserToggledChat, setHasUserToggledChat] = useState(false);
+  const [isCardExpanded, setIsCardExpanded] = useState(false);
   const [isRemindersPaneOpen, setIsRemindersPaneOpen] = useState(false);
   const [showCalendarMenu, setShowCalendarMenu] = useState(false);
   const [icsDownloaded, setIcsDownloaded] = useState(false);
@@ -285,6 +286,38 @@ export const EventCard: React.FC<EventCardProps> = ({
     return dateStr;
   };
 
+  // Formátování českého data včetně dne v týdnu (např. Sobota, 26. 07. 2026)
+  const formatCzechDateWithDay = (dateStr: string) => {
+    if (!dateStr) return { shortDay: '', fullDay: '', formattedDate: '', fullLabel: '', shortLabel: '' };
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10);
+      const day = parseInt(parts[2], 10);
+      const d = new Date(year, month - 1, day);
+      const czechDaysShort = ['Ne', 'Po', 'Út', 'St', 'Čt', 'Pá', 'So'];
+      const czechDaysFull = ['Neděle', 'Pondělí', 'Úterý', 'Středa', 'Čtvrtek', 'Pátek', 'Sobota'];
+      const dayIndex = isNaN(d.getDay()) ? 0 : d.getDay();
+      const shortDay = czechDaysShort[dayIndex] || '';
+      const fullDay = czechDaysFull[dayIndex] || '';
+      const formattedDate = `${parts[2]}. ${parts[1]}. ${parts[0]}`;
+      return {
+        shortDay,
+        fullDay,
+        formattedDate,
+        fullLabel: `${fullDay}, ${formattedDate}`,
+        shortLabel: `${shortDay} ${formattedDate}`,
+      };
+    }
+    return {
+      shortDay: '',
+      fullDay: '',
+      formattedDate: dateStr,
+      fullLabel: dateStr,
+      shortLabel: dateStr,
+    };
+  };
+
   // Formátování času zprávy
   const formatMessageTime = (timestamp: any) => {
     if (!timestamp) return '';
@@ -309,6 +342,8 @@ export const EventCard: React.FC<EventCardProps> = ({
     return `${hours}h předem`;
   };
 
+  const dateInfo = formatCzechDateWithDay(event.date);
+
   return (
     <div className={`bg-slate-900 rounded-2xl shadow-xl mb-6 transition relative overflow-hidden ${
       isPast ? 'opacity-85 grayscale-[20%]' : 'hover:shadow-2xl hover:shadow-black/50'
@@ -316,7 +351,9 @@ export const EventCard: React.FC<EventCardProps> = ({
       
       {/* Event Header Card s integrovanými tlačítky pro zadání účasti a volitelným pozadím týmu */}
       <div
-        className="p-4 sm:p-5 text-white flex flex-col gap-3.5 relative rounded-t-2xl z-20 transition-all duration-300"
+        className={`p-4 sm:p-5 text-white flex flex-col gap-3.5 relative z-20 transition-all duration-300 ${
+          isCardExpanded ? 'rounded-t-2xl' : 'rounded-2xl'
+        }`}
         style={{
           backgroundColor: activeTeam?.cardBgColor || '#0a0f1d',
           backgroundImage: activeTeam?.cardBgImage
@@ -327,302 +364,347 @@ export const EventCard: React.FC<EventCardProps> = ({
         }}
       >
         
-        {/* Horní řádek: Datum, Čas, Tým a Počet účastníků */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-          <div>
-            <div className="flex flex-wrap items-center gap-2 text-xs mb-1">
-              <div className={`flex items-center space-x-1.5 font-semibold uppercase tracking-wider ${
-                isPast ? 'text-slate-400' : 'text-emerald-400'
-              }`}>
-                <Calendar className="w-3.5 h-3.5" />
-                <span>{formatCzechDate(event.date)}</span>
-                <span className="text-slate-600">•</span>
-                <Clock className="w-3.5 h-3.5" />
-                <span>{event.time}</span>
-              </div>
-              
-              {activeTeam && (
-                <span className="bg-slate-800 text-slate-300 px-2 py-0.5 rounded-md text-[10px] font-bold font-mono">
-                  #{activeTeam.code} {activeTeam.name}
-                </span>
-              )}
-
+        {/* HORNÍ ŘÁDEK: Datum (s dnem v týdnu), Název události, Počet potvrzených účastníků a Tlačítko rozbalení */}
+        <div className="flex items-start justify-between gap-2.5">
+          <div
+            className="flex-1 min-w-0 cursor-pointer select-none group"
+            onClick={() => setIsCardExpanded(!isCardExpanded)}
+            title={isCardExpanded ? 'Kliknutím sbalíte kartu události' : 'Kliknutím rozbalíte všechny podrobnosti'}
+          >
+            {/* Datum s dnem v týdnu */}
+            <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-400 mb-0.5">
+              <Calendar className="w-3.5 h-3.5 shrink-0" />
+              <span>
+                <span className="sm:hidden">{dateInfo.shortLabel}</span>
+                <span className="hidden sm:inline">{dateInfo.fullLabel}</span>
+              </span>
               {isPast && (
-                <span className="bg-slate-800 text-slate-300 px-2 py-0.5 rounded-md text-[10px] font-bold flex items-center space-x-1">
-                  <Lock className="w-3 h-3 text-slate-400 shrink-0" />
-                  <span>Uplynulá událost</span>
+                <span className="bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded text-[10px] font-bold ml-1">
+                  Proběhlo
                 </span>
               )}
             </div>
 
-            <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">
+            {/* Název události */}
+            <h2 className="text-base sm:text-lg md:text-xl font-bold text-white tracking-tight leading-snug group-hover:text-emerald-300 transition-colors">
               {event.title}
             </h2>
-
-            {event.location && event.location.trim() !== '' && (
-              <div className="flex items-center space-x-1.5 text-xs text-slate-300 mt-1">
-                <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <span>{event.location.trim()}</span>
-              </div>
-            )}
           </div>
 
-          {/* Action Controls: Calendar Button, Attendance Summary, Admin delete */}
-          <div className="flex items-center space-x-2 w-full sm:w-auto justify-between sm:justify-end shrink-0 relative">
-            
-            {/* Přidat do kalendáře button & dropdown (solid button, no outline) */}
-            <div className="relative z-30" ref={calendarMenuRef}>
-              <button
-                type="button"
-                onClick={() => setShowCalendarMenu(!showCalendarMenu)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition cursor-pointer shadow-sm ${
-                  showCalendarMenu
-                    ? 'bg-emerald-500 text-slate-950 font-black'
-                    : 'bg-slate-800 hover:bg-slate-750 active:bg-slate-700 text-slate-200'
-                }`}
-                title="Přidat událost do osobního kalendáře (Google, Apple, Outlook...)"
-              >
-                <CalendarPlus className={`w-3.5 h-3.5 ${showCalendarMenu ? 'text-slate-950' : 'text-emerald-400'}`} />
-                <span className="hidden xs:inline sm:inline">Do kalendáře</span>
-                <span className="xs:hidden sm:hidden">Kalendář</span>
-                <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform duration-200 ${showCalendarMenu ? 'rotate-180 text-slate-950' : ''}`} />
-              </button>
-
-              {/* Mobile overlay to close on outside touch */}
-              {showCalendarMenu && (
-                <div
-                  className="fixed inset-0 z-40 bg-black/40 sm:hidden backdrop-blur-xs"
-                  onClick={() => setShowCalendarMenu(false)}
-                />
-              )}
-
-              {/* Dropdown Menu - positioned left-0 on mobile, right-0 on desktop */}
-              {showCalendarMenu && (
-                <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-72 sm:w-80 max-w-[calc(100vw-2.5rem)] bg-slate-900 border border-slate-700/90 rounded-2xl shadow-2xl z-50 p-2 text-white animate-in fade-in zoom-in-95 duration-150 backdrop-blur-md">
-                  <div className="px-3 py-2 border-b border-slate-800 mb-1">
-                    <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                      <CalendarPlus className="w-4 h-4 text-emerald-400" />
-                      <span>Přidat do osobního kalendáře</span>
-                    </div>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
-                      {event.title} • {event.time} ({formatCzechDate(event.date)})
-                    </p>
-                  </div>
-
-                  <div className="space-y-1">
-                    {/* Apple Calendar / .ics file for Mobile iOS, macOS, Outlook */}
-                    <button
-                      type="button"
-                      onClick={handleDownloadIcs}
-                      className="w-full text-left p-2.5 rounded-xl hover:bg-slate-800/90 active:bg-slate-700 transition flex items-start space-x-3 cursor-pointer group"
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
-                        {icsDownloaded ? (
-                          <Check className="w-4 h-4 text-emerald-400 stroke-[3]" />
-                        ) : (
-                          <Smartphone className="w-4 h-4" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-xs font-bold text-white flex items-center justify-between">
-                          <span>{icsDownloaded ? 'Uloženo do zařízení!' : 'Mobil / Apple / Outlook (.ics)'}</span>
-                          <Download className={`w-3.5 h-3.5 ${icsDownloaded ? 'text-emerald-400' : 'text-slate-400 group-hover:text-emerald-400'}`} />
-                        </div>
-                        <p className="text-[10px] text-slate-400 leading-tight mt-0.5">
-                          {icsDownloaded ? 'Soubor byl úspěšně stažen' : 'Pro iPhone, iPad, Mac a Outlook s 2h připomenutím'}
-                        </p>
-                      </div>
-                    </button>
-
-                    {/* Google Calendar */}
-                    <a
-                      href={getGoogleCalendarUrl(event, activeTeam)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() => setShowCalendarMenu(false)}
-                      className="w-full text-left p-2.5 rounded-xl hover:bg-slate-800/90 active:bg-slate-700 transition flex items-start space-x-3 cursor-pointer group"
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
-                        <Calendar className="w-4 h-4" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-xs font-bold text-white flex items-center justify-between">
-                          <span>Google Kalendář</span>
-                          <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-400" />
-                        </div>
-                        <p className="text-[10px] text-slate-400 leading-tight mt-0.5">
-                          Otevřít a uložit přímo v Google Kalendáři
-                        </p>
-                      </div>
-                    </a>
-
-                    {/* Outlook.com / Microsoft 365 */}
-                    <a
-                      href={getOutlookCalendarUrl(event, activeTeam)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() => setShowCalendarMenu(false)}
-                      className="w-full text-left p-2.5 rounded-xl hover:bg-slate-800/90 active:bg-slate-700 transition flex items-start space-x-3 cursor-pointer group"
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 border border-sky-500/30 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
-                        <Clock className="w-4 h-4" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-xs font-bold text-white flex items-center justify-between">
-                          <span>Outlook.com / Microsoft 365</span>
-                          <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-sky-400" />
-                        </div>
-                        <p className="text-[10px] text-slate-400 leading-tight mt-0.5">
-                          Uložit do webového kalendáře Microsoft
-                        </p>
-                      </div>
-                    </a>
-
-                    {/* Yahoo Calendar */}
-                    <a
-                      href={getYahooCalendarUrl(event, activeTeam)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() => setShowCalendarMenu(false)}
-                      className="w-full text-left p-2.5 rounded-xl hover:bg-slate-800/90 active:bg-slate-700 transition flex items-start space-x-3 cursor-pointer group"
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
-                        <CalendarPlus className="w-4 h-4" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-xs font-bold text-white flex items-center justify-between">
-                          <span>Yahoo Kalendář</span>
-                          <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-purple-400" />
-                        </div>
-                        <p className="text-[10px] text-slate-400 leading-tight mt-0.5">
-                          Uložit do kalendáře Yahoo
-                        </p>
-                      </div>
-                    </a>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Attendance counter box */}
-            <div className="bg-slate-850/90 rounded-xl px-3 py-1.5 text-right shadow-inner">
+          {/* Pravá část: Počet potvrzených účastníků a tlačítko rozbalení / sbalení */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {/* Počet potvrzených účastníků */}
+            <div className="bg-slate-850/90 rounded-xl px-2.5 sm:px-3 py-1.5 text-right shadow-inner shrink-0">
               <div className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider">Potvrzeno</div>
               <div className={`text-xs sm:text-sm font-extrabold flex items-center justify-end ${
                 isPast ? 'text-slate-300' : 'text-emerald-400'
               }`}>
                 <Users className="w-3.5 h-3.5 mr-1" />
-                <span>{yesList.length} hráčů</span>
+                <span>{yesList.length}</span>
               </div>
             </div>
 
-            {/* Edit button (solid button, no outline) */}
-            {isCreatorOrAdmin && onEditEvent && !isPast && (
-              <button
-                type="button"
-                onClick={() => onEditEvent(event)}
-                className="p-2 text-slate-300 hover:text-emerald-400 bg-slate-800 hover:bg-slate-750 active:bg-slate-700 rounded-xl transition cursor-pointer"
-                title="Upravit událost"
-                aria-label="Upravit událost"
-              >
-                <Pencil className="w-4 h-4" />
-              </button>
-            )}
-
-            {/* Delete button (solid button, no outline) */}
-            {isCreatorOrAdmin && onDeleteEvent && (
-              <button
-                type="button"
-                onClick={() => onDeleteEvent(event.id)}
-                className="p-2 text-slate-300 hover:text-rose-400 bg-slate-800 hover:bg-slate-750 active:bg-slate-700 rounded-xl transition cursor-pointer"
-                title="Zrušit a smazat událost"
-                aria-label="Zrušit a smazat událost"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            )}
+            {/* Tlačítko rozbalení / sbalení celé karty */}
+            <button
+              type="button"
+              onClick={() => setIsCardExpanded(!isCardExpanded)}
+              className="p-2 sm:p-2.5 bg-slate-800 hover:bg-slate-750 active:bg-slate-700 text-slate-200 hover:text-white rounded-xl transition cursor-pointer flex items-center gap-1 shrink-0"
+              title={isCardExpanded ? 'Sbalit kartu události' : 'Rozbalit všechny podrobnosti'}
+              aria-label={isCardExpanded ? 'Sbalit kartu události' : 'Rozbalit kartu události'}
+            >
+              {isCardExpanded ? (
+                <>
+                  <ChevronUp className="w-4 h-4 text-emerald-400" />
+                  <span className="hidden sm:inline text-xs font-semibold text-slate-300">Sbalit</span>
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="w-4 h-4 text-emerald-400" />
+                  <span className="hidden sm:inline text-xs font-semibold text-slate-300">Více</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
 
-        {/* TÝMOVÁ PŘIPOMENUTÍ: V kolapsovaném panelu, výchozí stav kolapsovaný */}
-        {!isPast && (
-          <div className="bg-slate-850/80 rounded-xl p-2.5 text-xs">
-            <button
-              type="button"
-              onClick={() => setIsRemindersPaneOpen(!isRemindersPaneOpen)}
-              className="w-full flex items-center justify-between text-left cursor-pointer group py-0.5"
-            >
-              <div className="flex items-center space-x-2 text-slate-200 font-semibold">
-                <Bell className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                <span>Týmová připomenutí</span>
-                <span className="bg-slate-750 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-md">
-                  {eventReminders.length > 0 ? `${eventReminders.length} nastaveno` : 'vypnuto'}
-                </span>
-              </div>
-              <div className="flex items-center space-x-1.5 text-[11px] text-slate-400 group-hover:text-emerald-400 transition">
-                <span>{isRemindersPaneOpen ? 'Skrýt nastavení' : 'Zobrazit nastavení'}</span>
-                {isRemindersPaneOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-              </div>
-            </button>
+        {/* ROZŠÍŘENÉ PODROBNOSTI KARTY: Čas, Místo, Kód týmu, Kalendář, Úpravy, Týmová připomenutí */}
+        {isCardExpanded && (
+          <div className="space-y-3 pt-2.5 border-t border-slate-700/60 animate-in fade-in duration-150">
+            {/* Druhý řádek: Čas, Kód týmu, Místo a Akční tlačítka kalendáře/editace/smazání */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <div className="flex items-center space-x-1.5 font-semibold text-slate-200">
+                  <Clock className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>{event.time}</span>
+                </div>
+                
+                {activeTeam && (
+                  <span className="bg-slate-800 text-slate-300 px-2 py-0.5 rounded-md text-[10px] font-bold font-mono">
+                    #{activeTeam.code} {activeTeam.name}
+                  </span>
+                )}
 
-            {isRemindersPaneOpen && (
-              <div className="mt-2.5 pt-2.5 border-t border-slate-700/60 space-y-2.5 animate-in fade-in">
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {eventReminders.length > 0 ? (
-                    eventReminders.map((h) => (
-                      <span
-                        key={h}
-                        className="bg-emerald-950/90 text-emerald-300 px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1.5 shadow-xs"
-                      >
-                        <span>{formatReminderLabel(h)}</span>
-                        {isCreatorOrAdmin && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleToggleReminder(h);
-                            }}
-                            className="hover:text-rose-300 cursor-pointer p-0.5 rounded"
-                            title="Odebrat toto připomenutí"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        )}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-slate-400 italic text-[11px]">Žádné týmové připomenutí není nastaveno.</span>
+                {isPast && (
+                  <span className="bg-slate-800 text-slate-300 px-2 py-0.5 rounded-md text-[10px] font-bold flex items-center space-x-1">
+                    <Lock className="w-3 h-3 text-slate-400 shrink-0" />
+                    <span>Uplynulá událost</span>
+                  </span>
+                )}
+
+                {event.location && event.location.trim() !== '' && (
+                  <div className="flex items-center space-x-1.5 text-xs text-slate-300">
+                    <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span>{event.location.trim()}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Action Controls: Do kalendáře button, Edit, Delete */}
+              <div className="flex items-center space-x-2 shrink-0 relative">
+                {/* Přidat do kalendáře button & dropdown (solid button, no outline) */}
+                <div className="relative z-30" ref={calendarMenuRef}>
+                  <button
+                    type="button"
+                    onClick={() => setShowCalendarMenu(!showCalendarMenu)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition cursor-pointer shadow-sm ${
+                      showCalendarMenu
+                        ? 'bg-emerald-500 text-slate-950 font-black'
+                        : 'bg-slate-800 hover:bg-slate-750 active:bg-slate-700 text-slate-200'
+                    }`}
+                    title="Přidat událost do osobního kalendáře (Google, Apple, Outlook...)"
+                  >
+                    <CalendarPlus className={`w-3.5 h-3.5 ${showCalendarMenu ? 'text-slate-950' : 'text-emerald-400'}`} />
+                    <span className="hidden xs:inline sm:inline">Do kalendáře</span>
+                    <span className="xs:hidden sm:hidden">Kalendář</span>
+                    <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform duration-200 ${showCalendarMenu ? 'rotate-180 text-slate-950' : ''}`} />
+                  </button>
+
+                  {/* Mobile overlay to close on outside touch */}
+                  {showCalendarMenu && (
+                    <div
+                      className="fixed inset-0 z-40 bg-black/40 sm:hidden backdrop-blur-xs"
+                      onClick={() => setShowCalendarMenu(false)}
+                    />
+                  )}
+
+                  {/* Dropdown Menu - positioned left-0 on mobile, right-0 on desktop */}
+                  {showCalendarMenu && (
+                    <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-72 sm:w-80 max-w-[calc(100vw-2.5rem)] bg-slate-900 border border-slate-700/90 rounded-2xl shadow-2xl z-50 p-2 text-white animate-in fade-in zoom-in-95 duration-150 backdrop-blur-md">
+                      <div className="px-3 py-2 border-b border-slate-800 mb-1">
+                        <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                          <CalendarPlus className="w-4 h-4 text-emerald-400" />
+                          <span>Přidat do osobního kalendáře</span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 mt-0.5">
+                          {event.title} • {event.time} ({formatCzechDate(event.date)})
+                        </p>
+                      </div>
+
+                      <div className="space-y-1">
+                        {/* Apple Calendar / .ics file for Mobile iOS, macOS, Outlook */}
+                        <button
+                          type="button"
+                          onClick={handleDownloadIcs}
+                          className="w-full text-left p-2.5 rounded-xl hover:bg-slate-800/90 active:bg-slate-700 transition flex items-start space-x-3 cursor-pointer group"
+                        >
+                          <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+                            {icsDownloaded ? (
+                              <Check className="w-4 h-4 text-emerald-400 stroke-[3]" />
+                            ) : (
+                              <Smartphone className="w-4 h-4" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-bold text-white flex items-center justify-between">
+                              <span>{icsDownloaded ? 'Uloženo do zařízení!' : 'Mobil / Apple / Outlook (.ics)'}</span>
+                              <Download className={`w-3.5 h-3.5 ${icsDownloaded ? 'text-emerald-400' : 'text-slate-400 group-hover:text-emerald-400'}`} />
+                            </div>
+                            <p className="text-[10px] text-slate-400 leading-tight mt-0.5">
+                              {icsDownloaded ? 'Soubor byl úspěšně stažen' : 'Pro iPhone, iPad, Mac a Outlook s 2h připomenutím'}
+                            </p>
+                          </div>
+                        </button>
+
+                        {/* Google Calendar */}
+                        <a
+                          href={getGoogleCalendarUrl(event, activeTeam)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => setShowCalendarMenu(false)}
+                          className="w-full text-left p-2.5 rounded-xl hover:bg-slate-800/90 active:bg-slate-700 transition flex items-start space-x-3 cursor-pointer group"
+                        >
+                          <div className="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+                            <Calendar className="w-4 h-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-bold text-white flex items-center justify-between">
+                              <span>Google Kalendář</span>
+                              <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-400" />
+                            </div>
+                            <p className="text-[10px] text-slate-400 leading-tight mt-0.5">
+                              Otevřít a uložit přímo v Google Kalendáři
+                            </p>
+                          </div>
+                        </a>
+
+                        {/* Outlook.com / Microsoft 365 */}
+                        <a
+                          href={getOutlookCalendarUrl(event, activeTeam)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => setShowCalendarMenu(false)}
+                          className="w-full text-left p-2.5 rounded-xl hover:bg-slate-800/90 active:bg-slate-700 transition flex items-start space-x-3 cursor-pointer group"
+                        >
+                          <div className="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 border border-sky-500/30 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+                            <Clock className="w-4 h-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-bold text-white flex items-center justify-between">
+                              <span>Outlook.com / Microsoft 365</span>
+                              <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-sky-400" />
+                            </div>
+                            <p className="text-[10px] text-slate-400 leading-tight mt-0.5">
+                              Uložit do webového kalendáře Microsoft
+                            </p>
+                          </div>
+                        </a>
+
+                        {/* Yahoo Calendar */}
+                        <a
+                          href={getYahooCalendarUrl(event, activeTeam)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => setShowCalendarMenu(false)}
+                          className="w-full text-left p-2.5 rounded-xl hover:bg-slate-800/90 active:bg-slate-700 transition flex items-start space-x-3 cursor-pointer group"
+                        >
+                          <div className="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+                            <CalendarPlus className="w-4 h-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-bold text-white flex items-center justify-between">
+                              <span>Yahoo Kalendář</span>
+                              <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-purple-400" />
+                            </div>
+                            <p className="text-[10px] text-slate-400 leading-tight mt-0.5">
+                              Uložit do kalendáře Yahoo
+                            </p>
+                          </div>
+                        </a>
+                      </div>
+                    </div>
                   )}
                 </div>
 
-                {/* Quick add chips for creator/admin (solid buttons, no outline) */}
-                {isCreatorOrAdmin && (
-                  <div className="pt-2 border-t border-slate-700/50 flex flex-wrap items-center gap-1.5">
-                    <span className="text-[10px] text-slate-400 uppercase font-bold mr-1">Rychlá volba:</span>
-                    {[
-                      { hours: 48, label: '48h předem' },
-                      { hours: 24, label: '24h předem' },
-                      { hours: 12, label: '12h předem' },
-                      { hours: 4, label: '4h předem' },
-                      { hours: 2, label: '2h předem' },
-                      { hours: 1, label: '1h předem' },
-                    ].map((opt) => {
-                      const isActive = eventReminders.includes(opt.hours);
-                      return (
-                        <button
-                          key={opt.hours}
-                          type="button"
-                          onClick={() => handleToggleReminder(opt.hours)}
-                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
-                            isActive
-                              ? 'bg-emerald-500 text-slate-950 shadow-sm'
-                              : 'bg-slate-750 hover:bg-slate-700 active:bg-slate-650 text-slate-200'
-                          }`}
-                        >
-                          {isActive ? '✓ ' : '+ '}
-                          {opt.label}
-                        </button>
-                      );
-                    })}
+                {/* Edit button (solid button, no outline) */}
+                {isCreatorOrAdmin && onEditEvent && !isPast && (
+                  <button
+                    type="button"
+                    onClick={() => onEditEvent(event)}
+                    className="p-2 text-slate-300 hover:text-emerald-400 bg-slate-800 hover:bg-slate-750 active:bg-slate-700 rounded-xl transition cursor-pointer"
+                    title="Upravit událost"
+                    aria-label="Upravit událost"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                )}
+
+                {/* Delete button (solid button, no outline) */}
+                {isCreatorOrAdmin && onDeleteEvent && (
+                  <button
+                    type="button"
+                    onClick={() => onDeleteEvent(event.id)}
+                    className="p-2 text-slate-300 hover:text-rose-400 bg-slate-800 hover:bg-slate-750 active:bg-slate-700 rounded-xl transition cursor-pointer"
+                    title="Zrušit a smazat událost"
+                    aria-label="Zrušit a smazat událost"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* TÝMOVÁ PŘIPOMENUTÍ: V kolapsovaném panelu, výchozí stav kolapsovaný */}
+            {!isPast && (
+              <div className="bg-slate-850/80 rounded-xl p-2.5 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setIsRemindersPaneOpen(!isRemindersPaneOpen)}
+                  className="w-full flex items-center justify-between text-left cursor-pointer group py-0.5"
+                >
+                  <div className="flex items-center space-x-2 text-slate-200 font-semibold">
+                    <Bell className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span>Týmová připomenutí</span>
+                    <span className="bg-slate-750 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-md">
+                      {eventReminders.length > 0 ? `${eventReminders.length} nastaveno` : 'vypnuto'}
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-1.5 text-[11px] text-slate-400 group-hover:text-emerald-400 transition">
+                    <span>{isRemindersPaneOpen ? 'Skrýt nastavení' : 'Zobrazit nastavení'}</span>
+                    {isRemindersPaneOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                  </div>
+                </button>
+
+                {isRemindersPaneOpen && (
+                  <div className="mt-2.5 pt-2.5 border-t border-slate-700/60 space-y-2.5 animate-in fade-in">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {eventReminders.length > 0 ? (
+                        eventReminders.map((h) => (
+                          <span
+                            key={h}
+                            className="bg-emerald-950/90 text-emerald-300 px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1.5 shadow-xs"
+                          >
+                            <span>{formatReminderLabel(h)}</span>
+                            {isCreatorOrAdmin && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleReminder(h);
+                                }}
+                                className="hover:text-rose-300 cursor-pointer p-0.5 rounded"
+                                title="Odebrat toto připomenutí"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            )}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-slate-400 italic text-[11px]">Žádné týmové připomenutí není nastaveno.</span>
+                      )}
+                    </div>
+
+                    {/* Quick add chips for creator/admin (solid buttons, no outline) */}
+                    {isCreatorOrAdmin && (
+                      <div className="pt-2 border-t border-slate-700/50 flex flex-wrap items-center gap-1.5">
+                        <span className="text-[10px] text-slate-400 uppercase font-bold mr-1">Rychlá volba:</span>
+                        {[
+                          { hours: 48, label: '48h předem' },
+                          { hours: 24, label: '24h předem' },
+                          { hours: 12, label: '12h předem' },
+                          { hours: 4, label: '4h předem' },
+                          { hours: 2, label: '2h předem' },
+                          { hours: 1, label: '1h předem' },
+                        ].map((opt) => {
+                          const isActive = eventReminders.includes(opt.hours);
+                          return (
+                            <button
+                              key={opt.hours}
+                              type="button"
+                              onClick={() => handleToggleReminder(opt.hours)}
+                              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
+                                isActive
+                                  ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                                  : 'bg-slate-750 hover:bg-slate-700 active:bg-slate-650 text-slate-200'
+                              }`}
+                            >
+                              {isActive ? '✓ ' : '+ '}
+                              {opt.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -715,8 +797,10 @@ export const EventCard: React.FC<EventCardProps> = ({
 
       </div>
 
-      {/* Účast zobrazená v Dark Arena Pro stylu: tmavé panely, žádné světlé rámečky */}
-      <div className="p-3.5 sm:p-4 space-y-2 bg-slate-900 border-t border-slate-800">
+      {/* Účast a diskuze: zobrazeno pouze v rozbaleném stavu */}
+      {isCardExpanded && (
+        <>
+          <div className="p-3.5 sm:p-4 space-y-2 bg-slate-900 border-t border-slate-800 animate-in fade-in duration-150">
         
         {/* Sekce 1: Zúčastní se (Zelená) */}
         <div className="rounded-xl overflow-hidden bg-slate-950/80 shadow-xs">
@@ -995,6 +1079,8 @@ export const EventCard: React.FC<EventCardProps> = ({
           </div>
         )}
       </div>
+        </>
+      )}
 
     </div>
   );

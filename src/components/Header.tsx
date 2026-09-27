@@ -123,14 +123,16 @@ export const Header: React.FC<HeaderProps> = ({
                   title="Přepnout aktivní tým nebo přehled"
                 >
                   {isAllTeamsSelected ? (
-                    <LayoutDashboard className="w-3.5 h-3.5 text-emerald-400 mr-1 sm:mr-1.5 shrink-0" />
+                    <LayoutDashboard className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                   ) : (
-                    <Users className="w-3.5 h-3.5 text-emerald-400 mr-1 sm:mr-1.5 shrink-0" />
+                    <>
+                      <Users className="w-3.5 h-3.5 text-emerald-400 mr-1 sm:mr-1.5 shrink-0" />
+                      <span className="text-[11px] sm:text-xs font-semibold text-white max-w-[68px] min-[360px]:max-w-[90px] min-[400px]:max-w-[125px] sm:max-w-[170px] md:max-w-[210px] truncate">
+                        {activeTeam?.name || 'Vyberte tým'}
+                      </span>
+                    </>
                   )}
-                  <span className="text-[11px] sm:text-xs font-semibold text-white max-w-[68px] min-[360px]:max-w-[90px] min-[400px]:max-w-[125px] sm:max-w-[170px] md:max-w-[210px] truncate">
-                    {isAllTeamsSelected ? 'Všechny týmy' : (activeTeam?.name || 'Vyberte tým')}
-                  </span>
-                  <ChevronDown className={`w-3.5 h-3.5 ml-0.5 sm:ml-1 text-slate-400 shrink-0 transition-transform duration-200 ${
+                  <ChevronDown className={`w-3.5 h-3.5 ml-1 text-slate-400 shrink-0 transition-transform duration-200 ${
                     isTeamMenuOpen ? 'rotate-180 text-emerald-400' : ''
                   }`} />
                 </button>
@@ -273,16 +275,15 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Akce administrátora pro události a tým */}
             {isAdmin && (activeTeam || (isAllTeamsSelected && teams.length > 0)) && (
               <>
-                {/* Tlačítko Vytvořit událost (solid neon green, no outline) */}
+                {/* Tlačítko Vytvořit událost (pouze ikona plus, bez textu) */}
                 <button
                   type="button"
                   onClick={onOpenCreateEvent}
-                  className="px-3 py-1.5 sm:px-3.5 sm:py-2 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 text-xs font-black rounded-xl flex items-center transition shadow-md shadow-emerald-950/40 cursor-pointer"
+                  className="p-2 sm:p-2.5 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 rounded-xl flex items-center justify-center transition shadow-md shadow-emerald-950/40 cursor-pointer"
                   title="Vytvořit novou událost"
+                  aria-label="Vytvořit novou událost"
                 >
-                  <Plus className="w-4 h-4 sm:mr-1 stroke-[3]" />
-                  <span className="hidden sm:inline">Nová událost</span>
-                  <span className="sm:hidden font-bold">Nová</span>
+                  <Plus className="w-4 h-4 sm:w-5 sm:h-5 stroke-[3]" />
                 </button>
 
                 {activeTeam && (
@@ -291,22 +292,22 @@ export const Header: React.FC<HeaderProps> = ({
                     <button
                       type="button"
                       onClick={onOpenTeamSettings || onOpenManageMembers}
-                      className="p-2 sm:px-2.5 sm:py-1.5 bg-slate-800 hover:bg-slate-750 active:bg-slate-700 text-purple-300 text-xs font-semibold rounded-xl flex items-center transition cursor-pointer"
+                      className="p-2 sm:p-2.5 bg-slate-800 hover:bg-slate-750 active:bg-slate-700 text-purple-300 rounded-xl flex items-center justify-center transition cursor-pointer"
                       title="Změnit vzhled, barvu nebo pozadí karty události"
+                      aria-label="Vzhled karet"
                     >
-                      <Palette className="w-3.5 h-3.5 sm:mr-1 text-purple-400" />
-                      <span className="hidden lg:inline">Vzhled</span>
+                      <Palette className="w-4 h-4 text-purple-400" />
                     </button>
 
                     {/* Tlačítko Správa členů */}
                     <button
                       type="button"
                       onClick={onOpenManageMembers}
-                      className="p-2 sm:px-2.5 sm:py-1.5 bg-slate-800 hover:bg-slate-750 active:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl flex items-center transition cursor-pointer"
+                      className="p-2 sm:p-2.5 bg-slate-800 hover:bg-slate-750 active:bg-slate-700 text-slate-200 rounded-xl flex items-center justify-center transition cursor-pointer"
                       title="Správa členů týmu"
+                      aria-label="Správa členů týmu"
                     >
-                      <Settings className="w-3.5 h-3.5 sm:mr-1 text-slate-400" />
-                      <span className="hidden lg:inline">Členové</span>
+                      <Settings className="w-4 h-4 text-slate-400" />
                     </button>
                   </>
                 )}
@@ -317,7 +318,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               type="button"
               onClick={onOpenNotifications}
-              className="relative p-2 text-emerald-400 hover:text-white bg-slate-800 hover:bg-slate-750 active:bg-slate-700 rounded-xl transition cursor-pointer"
+              className="relative p-2 sm:p-2.5 text-emerald-400 hover:text-white bg-slate-800 hover:bg-slate-750 active:bg-slate-700 rounded-xl transition cursor-pointer flex items-center justify-center"
               title="Notifikace a připomenutí"
             >
               <Bell className="w-4 h-4" />
@@ -328,34 +329,20 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </button>
 
-            {/* Profil uživatele (solid button, no outline) */}
+            {/* Profil uživatele: zobrazuje pouze iniciálu jména (bez celého jména) */}
             <button
               type="button"
               onClick={onOpenProfile}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-750 active:bg-slate-700 transition text-left cursor-pointer"
-              title="Upravit můj profil & nastavení notifikací a písma"
+              className="p-1.5 sm:p-2 rounded-xl bg-slate-800 hover:bg-slate-750 active:bg-slate-700 transition flex items-center justify-center cursor-pointer relative"
+              title={`Můj profil: ${currentUser.name} (${currentUser.email})`}
+              aria-label={`Můj profil: ${currentUser.name}`}
             >
-              <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-black text-[11px] sm:text-xs shrink-0">
-                {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+              <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-black text-xs sm:text-sm shrink-0">
+                {currentUser.name ? currentUser.name.trim().charAt(0).toUpperCase() : currentUser.email.charAt(0).toUpperCase()}
               </div>
-              <span className="text-[11px] sm:text-xs font-semibold text-slate-200 max-w-[55px] min-[400px]:max-w-[75px] min-[520px]:max-w-[110px] sm:max-w-[140px] truncate hidden min-[360px]:inline-block">
-                {currentTeamNickname || currentUser.name}
-              </span>
-              {isAdmin ? (
-                <Shield className="w-3 h-3 text-purple-400 shrink-0 hidden min-[440px]:inline-block" title="Správce" />
-              ) : (
-                <UserCheck className="w-3 h-3 text-blue-400 shrink-0 hidden min-[440px]:inline-block" title="Běžný člen" />
+              {isAdmin && (
+                <span className="w-2 h-2 rounded-full bg-purple-400 absolute top-1 right-1" title="Správce" />
               )}
-            </button>
-
-            {/* Tlačítko odhlášení (solid button, no outline) */}
-            <button
-              type="button"
-              onClick={onSignOut}
-              className="p-2 text-slate-400 hover:text-rose-400 bg-slate-800 hover:bg-slate-750 active:bg-slate-700 rounded-xl transition cursor-pointer"
-              title="Odhlásit se"
-            >
-              <LogOut className="w-4 h-4" />
             </button>
 
           </div>

@@ -548,7 +548,7 @@ export default function App() {
                     <h2 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2 mt-0.5">
                       Nadcházející události
                       <span className="text-xs font-black text-slate-950 bg-emerald-400 px-2.5 py-0.5 rounded-full">
-                        {upcomingEvents.length} {upcomingEvents.length === 1 ? 'událost' : upcomingEvents.length >= 2 && upcomingEvents.length <= 4 ? 'události' : 'událostí'}
+                        {upcomingEvents.length}
                       </span>
                     </h2>
                     <p className="text-xs text-slate-400 mt-1">
@@ -692,7 +692,7 @@ export default function App() {
                         <Calendar className="w-5 h-5 text-emerald-400" />
                         <span>Nadcházející události</span>
                         <span className="text-xs font-black text-slate-950 bg-emerald-400 px-2.5 py-0.5 rounded-full">
-                          {upcomingEvents.length} {upcomingEvents.length === 1 ? 'událost' : upcomingEvents.length >= 2 && upcomingEvents.length <= 4 ? 'události' : 'událostí'}
+                          {upcomingEvents.length}
                         </span>
                       </h3>
                     </div>
@@ -821,7 +821,7 @@ export default function App() {
           <button
             type="button"
             onClick={() => setActiveTeamId('ALL')}
-            className={`flex flex-col items-center gap-1 py-1 px-3 rounded-xl transition cursor-pointer ${
+            className={`flex flex-col items-center gap-1 py-1 px-4 rounded-xl transition cursor-pointer ${
               isAllTeamsSelected ? 'bg-slate-800 text-emerald-400 font-bold' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -839,7 +839,7 @@ export default function App() {
                   setTeamModalMode('members');
                 }
               }}
-              className={`flex flex-col items-center gap-1 py-1 px-3 rounded-xl transition cursor-pointer ${
+              className={`flex flex-col items-center gap-1 py-1 px-4 rounded-xl transition cursor-pointer ${
                 !isAllTeamsSelected ? 'bg-slate-800 text-emerald-400 font-bold' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -848,21 +848,10 @@ export default function App() {
             </button>
           )}
 
-          {currentUser.role === 'admin' && (
-            <button
-              type="button"
-              onClick={() => setShowCreateEventModal(true)}
-              className="bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 p-3 rounded-2xl shadow-lg shadow-emerald-500/30 flex items-center justify-center -mt-5 cursor-pointer font-black"
-              title="Vytvořit novou událost"
-            >
-              <Plus className="w-6 h-6 stroke-[3]" />
-            </button>
-          )}
-
           <button
             type="button"
             onClick={() => setShowNotificationModal(true)}
-            className="flex flex-col items-center gap-1 py-1 px-3 rounded-xl text-slate-400 hover:text-emerald-400 transition cursor-pointer relative"
+            className="flex flex-col items-center gap-1 py-1 px-4 rounded-xl text-slate-400 hover:text-emerald-400 transition cursor-pointer relative"
           >
             <div className="relative">
               <Bell className="w-5 h-5" />
@@ -873,17 +862,6 @@ export default function App() {
               )}
             </div>
             <span className="text-[10px]">Zprávy</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setShowUserProfileModal(true)}
-            className="flex flex-col items-center gap-1 py-1 px-3 rounded-xl text-slate-400 hover:text-white transition cursor-pointer"
-          >
-            <div className="w-5 h-5 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-[10px]">
-              {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
-            </div>
-            <span className="text-[10px]">Profil</span>
           </button>
         </nav>
       )}
@@ -971,6 +949,7 @@ export default function App() {
           teams={teams}
           onClose={() => setShowUserProfileModal(false)}
           onOpenNativeAppModal={() => setShowNativeAppModal(true)}
+          onSignOut={handleSignOut}
           onUpdateUser={(updatedUser) => {
             setCurrentUser(updatedUser);
           }}

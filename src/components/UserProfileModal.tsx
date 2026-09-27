@@ -4,7 +4,7 @@ import { db, doc, updateDoc } from '../lib/firebase';
 import { getMemberDisplayName } from '../utils/userUtils';
 import { getUserTeamNotificationPreferences, sendTestBrowserNotification } from '../utils/notificationService';
 import { FONT_SIZE_OPTIONS, applyAppFontSize, getInitialFontSize, saveFontSizePreference } from '../utils/fontSizeUtils';
-import { User, Tag, Check, X, Mail, Trash2, Sparkles, Building2, Bell, AlertCircle, MessageSquare, ChevronDown, ChevronUp, Smartphone, CalendarPlus, CalendarX, Pencil, Type } from 'lucide-react';
+import { User, Tag, Check, X, Mail, Trash2, Sparkles, Building2, Bell, AlertCircle, MessageSquare, ChevronDown, ChevronUp, Smartphone, CalendarPlus, CalendarX, Pencil, Type, LogOut } from 'lucide-react';
 
 interface UserProfileModalProps {
   currentUser: UserProfile;
@@ -14,6 +14,7 @@ interface UserProfileModalProps {
   onUpdateUser: (updatedUser: UserProfile) => void;
   onUpdateTeamNickname?: (teamId: string, nickname: string) => void;
   onOpenNativeAppModal?: () => void;
+  onSignOut?: () => void;
 }
 
 export const UserProfileModal: React.FC<UserProfileModalProps> = ({
@@ -24,6 +25,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   onUpdateUser,
   onUpdateTeamNickname,
   onOpenNativeAppModal,
+  onSignOut,
 }) => {
   const [fullName, setFullName] = useState(currentUser.name || '');
   
@@ -290,135 +292,25 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             </p>
           </div>
 
-          {/* Section 3: Velikost písma v aplikaci */}
-          <div className="border-t border-slate-800 pt-4">
-            <div className="flex items-center justify-between mb-2">
-              <div>
-                <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center space-x-1.5">
-                  <Type className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Velikost písma v aplikaci</span>
-                </label>
-                <p className="text-[11px] text-slate-400">
-                  Přizpůsobte si velikost textu pro pohodlnější čtení na mobilu i počítači.
-                </p>
-              </div>
-            </div>
 
-            <div className="grid grid-cols-3 gap-2 sm:gap-2.5 mt-2.5">
-              {FONT_SIZE_OPTIONS.map((opt) => {
-                const isSelected = selectedFontSize === opt.id;
-                return (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    onClick={() => handleFontSizeSelect(opt.id)}
-                    className={`p-2.5 sm:p-3 rounded-xl text-left transition flex flex-col justify-between cursor-pointer relative ${
-                      isSelected
-                        ? 'bg-emerald-500 text-slate-950 shadow-md font-black'
-                        : 'bg-slate-800 hover:bg-slate-750 text-slate-300'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between w-full mb-1">
-                      <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
-                        isSelected ? 'bg-slate-950/20 text-slate-950' : 'bg-slate-900 text-slate-400'
-                      }`}>
-                        {opt.badge}
-                      </span>
-                      {isSelected ? (
-                        <div className="w-4 h-4 rounded-full bg-slate-950 text-emerald-400 flex items-center justify-center shrink-0">
-                          <Check className="w-2.5 h-2.5 stroke-[3]" />
-                        </div>
-                      ) : (
-                        <div className="w-4 h-4 rounded-full bg-slate-700 shrink-0" />
-                      )}
-                    </div>
-                    <div>
-                      <div className="font-bold text-xs sm:text-sm flex items-center gap-1">
-                        <span>{opt.label}</span>
-                      </div>
-                      <p className={`text-[10px] mt-0.5 line-clamp-2 leading-tight ${
-                        isSelected ? 'text-slate-900/80 font-medium' : 'text-slate-400'
-                      }`}>
-                        {opt.sublabel}
-                      </p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-            <div className="mt-2 flex items-center justify-between text-[11px] text-slate-400 bg-slate-950 px-2.5 py-1.5 rounded-lg">
-              <span>Živý náhled: velikost se okamžitě projeví v aplikaci</span>
-              <span className="font-semibold text-emerald-400">
-                {selectedFontSize === 'xlarge' ? 'Největší (+28 %)' : selectedFontSize === 'large' ? 'Větší (+12,5 %)' : 'Standardní (100 %)'}
-              </span>
-            </div>
-          </div>
 
-          {/* Section 4: Systémová upozornění a nastavení notifikací v týmech */}
-          <div className="border-t border-slate-800 pt-4 space-y-3">
-            {/* Quick Test Box for Mobile / Android Push & Capacitor */}
-            <div className="bg-slate-950 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-              <div className="flex items-start space-x-2.5">
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
-                  <Smartphone className="w-4 h-4" />
-                </div>
+          {/* Section 2: Týmy - Přezdívky & Nastavení notifikací (přímo pod sekcí jména) */}
+          {teams.length > 0 && (
+            <div className="border-t border-slate-800 pt-4 space-y-3">
+              <div className="flex items-center justify-between">
                 <div>
-                  <div className="flex items-center gap-1.5">
-                    <h4 className="text-xs font-bold text-white">Mobilní aplikace (Android & iOS)</h4>
-                    <span className="text-[9px] font-bold px-1.5 py-0.2 bg-emerald-500/20 text-emerald-400 rounded font-mono">
-                      Capacitor
-                    </span>
-                  </div>
+                  <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center space-x-1.5">
+                    <Tag className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Přezdívky & Notifikace v týmech</span>
+                  </label>
                   <p className="text-[11px] text-slate-400">
-                    Aplikace podporuje nativní instalaci na Android (APK) i iPhone se systémovými notifikacemi.
+                    Nastavte si pro každý tým přezdívku a zvolte, jaká upozornění a připomenutí chcete dostávat.
                   </p>
                 </div>
+                <span className="text-xs font-bold px-2 py-0.5 bg-slate-800 text-emerald-400 rounded-lg shrink-0">
+                  {teams.length} {teams.length === 1 ? 'tým' : teams.length < 5 ? 'týmy' : 'týmů'}
+                </span>
               </div>
-              <div className="flex items-center gap-1.5 shrink-0">
-                {onOpenNativeAppModal && (
-                  <button
-                    type="button"
-                    onClick={onOpenNativeAppModal}
-                    className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-750 active:scale-95 text-slate-200 font-bold rounded-lg text-xs transition cursor-pointer flex items-center justify-center gap-1"
-                    title="Návod pro vytvoření APK a podrobnosti o nativní aplikaci"
-                  >
-                    <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Návod & APK</span>
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={handleTestSystemNotification}
-                  className="px-2.5 py-1.5 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-black rounded-lg text-xs shrink-0 transition cursor-pointer flex items-center justify-center gap-1"
-                >
-                  <Bell className="w-3.5 h-3.5" />
-                  <span>Test notifikace</span>
-                </button>
-              </div>
-            </div>
-
-            {testNotificationStatus && (
-              <div className="p-2.5 bg-emerald-950/80 text-emerald-300 text-xs rounded-xl flex items-center animate-in fade-in font-medium">
-                <Check className="w-3.5 h-3.5 mr-1.5 shrink-0 text-emerald-400" />
-                <span>{testNotificationStatus}</span>
-              </div>
-            )}
-
-            {teams.length > 0 && (
-              <>
-                <div className="flex items-center justify-between pt-1">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider">
-                      Přezdívky & Notifikace v týmech
-                    </label>
-                    <p className="text-[11px] text-slate-400">
-                      Nastavte si pro každý tým přezdívku a zvolte, jaká upozornění a připomenutí chcete dostávat.
-                    </p>
-                  </div>
-                  <span className="text-xs font-bold px-2 py-0.5 bg-slate-800 text-emerald-400 rounded-lg shrink-0">
-                    {teams.length} {teams.length === 1 ? 'tým' : teams.length < 5 ? 'týmy' : 'týmů'}
-                  </span>
-                </div>
 
               <div className="space-y-4">
                 {teams.map((team) => {
@@ -661,13 +553,140 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   );
                 })}
               </div>
-            </>
+            </div>
           )}
-        </div>
-      </form>
+
+          {/* Section 3: Velikost písma v aplikaci (pod sekcí týmů) */}
+          <div className="border-t border-slate-800 pt-4">
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center space-x-1.5">
+                  <Type className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Velikost písma v aplikaci</span>
+                </label>
+                <p className="text-[11px] text-slate-400">
+                  Přizpůsobte si velikost textu pro pohodlnější čtení na mobilu i počítači.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 sm:gap-2.5 mt-2.5">
+              {FONT_SIZE_OPTIONS.map((opt) => {
+                const isSelected = selectedFontSize === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => handleFontSizeSelect(opt.id)}
+                    className={`p-2 sm:p-2.5 rounded-xl text-center transition flex flex-col items-center justify-between min-w-0 overflow-hidden cursor-pointer ${
+                      isSelected
+                        ? 'bg-emerald-500 text-slate-950 font-black shadow-md ring-2 ring-emerald-400'
+                        : 'bg-slate-800 hover:bg-slate-750 text-slate-300'
+                    }`}
+                  >
+                    <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded truncate max-w-full block mb-1 ${
+                      isSelected ? 'bg-slate-950/20 text-slate-950' : 'bg-slate-900 text-slate-400'
+                    }`}>
+                      {opt.badge}
+                    </span>
+                    <div className="w-full min-w-0 my-0.5">
+                      <div className="font-bold text-xs truncate">
+                        {opt.label}
+                      </div>
+                      <div className={`text-[10px] font-semibold ${
+                        isSelected ? 'text-slate-950/80' : 'text-emerald-400'
+                      }`}>
+                        {opt.sizeMultiplier}
+                      </div>
+                    </div>
+                    {isSelected ? (
+                      <div className="mt-1 w-4 h-4 rounded-full bg-slate-950 text-emerald-400 flex items-center justify-center shrink-0">
+                        <Check className="w-2.5 h-2.5 stroke-[3]" />
+                      </div>
+                    ) : (
+                      <div className="mt-1 w-4 h-4 rounded-full bg-slate-700/60 shrink-0" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-2 flex items-center justify-between text-[11px] text-slate-400 bg-slate-950 px-2.5 py-1.5 rounded-lg">
+              <span>Živý náhled:</span>
+              <span className="font-semibold text-emerald-400">
+                {selectedFontSize === 'xlarge' ? 'Největší (+28 %)' : selectedFontSize === 'large' ? 'Větší (+12,5 %)' : 'Standardní (100 %)'}
+              </span>
+            </div>
+          </div>
+
+          {/* Section 4: Testování notifikací (tlačítko umístěné dole) */}
+          <div className="border-t border-slate-800 pt-4">
+            <div className="bg-slate-950/80 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="min-w-0">
+                <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <Bell className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span>Test systémových notifikací</span>
+                </h4>
+                <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
+                  Vyzkoušejte, zda vaše zařízení správně přijímá a zobrazuje push notifikace.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleTestSystemNotification}
+                className="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-bold rounded-xl text-xs shrink-0 transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md"
+              >
+                <Bell className="w-3.5 h-3.5" />
+                <span>Otestovat notifikace</span>
+              </button>
+            </div>
+
+            {testNotificationStatus && (
+              <div className="mt-2.5 p-2.5 bg-emerald-950/80 text-emerald-300 text-xs rounded-xl flex items-center animate-in fade-in font-medium">
+                <Check className="w-3.5 h-3.5 mr-1.5 shrink-0 text-emerald-400" />
+                <span>{testNotificationStatus}</span>
+              </div>
+            )}
+          </div>
+          {/* Section 5: Účet a odhlášení */}
+          {onSignOut && (
+            <div className="border-t border-slate-800 pt-4">
+              <div className="bg-slate-950/80 rounded-xl p-3.5 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-white">Přihlášený účet</div>
+                  <div className="text-[11px] text-slate-400 truncate">{currentUser.email}</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onSignOut();
+                  }}
+                  className="px-3.5 py-2 bg-rose-500/15 hover:bg-rose-500/25 active:bg-rose-500/30 text-rose-400 font-bold rounded-xl text-xs flex items-center gap-1.5 transition cursor-pointer shrink-0"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Odhlásit se</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </form>
 
         {/* Fixed Footer Buttons */}
-        <div className="p-3.5 sm:p-4 bg-slate-950 border-t border-slate-800 flex items-center space-x-3 shrink-0">
+        <div className="p-3.5 sm:p-4 bg-slate-950 border-t border-slate-800 flex items-center gap-2 sm:gap-3 shrink-0">
+          {onSignOut && (
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onSignOut();
+              }}
+              className="py-2.5 px-3 bg-rose-500/15 hover:bg-rose-500/25 active:bg-rose-500/30 text-rose-400 font-bold rounded-xl transition text-xs sm:text-sm flex items-center justify-center space-x-1.5 cursor-pointer shrink-0"
+              title="Odhlásit se z účtu"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="hidden sm:inline">Odhlásit</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={handleCancelModal}
