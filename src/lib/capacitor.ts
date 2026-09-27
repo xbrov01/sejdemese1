@@ -165,6 +165,7 @@ export async function scheduleNativeNotification(options: {
           schedule: { at: new Date(Date.now() + 100) },
           channelId: 'sejdemese_notifications',
           extra: options.data || null,
+          smallIcon: 'ic_stat_notification',
           iconColor: '#10B981',
         },
       ],

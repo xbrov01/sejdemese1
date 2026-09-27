@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
+    "assets:generate": "node scripts/generate-all-assets.cjs",
     "cap:build": "vite build && cap sync",
     "cap:sync": "cap sync",
     "cap:android": "cap open android",
@@ -35,6 +36,7 @@
     "vite": "^6.2.3"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.5.2",
     "@types/express": "^4.17.21",
     "@types/node": "^22.14.0",
