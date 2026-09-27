@@ -79,7 +79,6 @@ export async function initPushNotifications(
           description: 'Upozornění na události, docházku a týmový chat',
           importance: 5, // IMPORTANCE_HIGH
           visibility: 1, // VISIBILITY_PUBLIC
-          sound: 'beep.wav',
           vibration: true,
           lights: true,
           lightColor: '#10B981',
@@ -90,7 +89,11 @@ export async function initPushNotifications(
     }
 
     // 3. Zaregistrovat zařízení v FCM / APNS
-    await PushNotifications.register();
+    try {
+      await PushNotifications.register();
+    } catch (regErr) {
+      console.warn('[Capacitor] PushNotifications.register varování (aplikace pokračuje dál):', regErr);
+    }
 
     // 4. Nastavit listenery
     PushNotifications.addListener('registration', async (token: Token) => {
@@ -160,10 +163,8 @@ export async function scheduleNativeNotification(options: {
           body: options.body,
           id: notifId,
           schedule: { at: new Date(Date.now() + 100) },
-          sound: 'beep.wav',
           channelId: 'sejdemese_notifications',
           extra: options.data || null,
-          smallIcon: 'ic_stat_icon_config_sample',
           iconColor: '#10B981',
         },
       ],
