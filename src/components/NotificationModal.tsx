@@ -198,9 +198,9 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
             {browserPermission === 'granted' ? (
               <>
                 <div className="w-2 h-2 rounded-full bg-emerald-400 shrink-0 animate-pulse" />
-                <span className="text-[11px] font-semibold text-emerald-300 flex items-center gap-1">
-                  <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
-                  Systémová oznámení v mobilu (Android / PWA) jsou aktivní
+                <span className="text-[11px] font-semibold text-emerald-300 flex items-center gap-1.5">
+                  <Bell className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  Systémová oznámení jsou aktivní
                 </span>
               </>
             ) : (
@@ -214,26 +214,15 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
           </div>
 
           <div className="flex items-center space-x-2">
-            {onOpenNativeAppModal && (
-              <button
-                type="button"
-                onClick={onOpenNativeAppModal}
-                className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-200 font-bold rounded-lg text-[11px] shrink-0 transition cursor-pointer flex items-center gap-1 active:scale-95"
-                title="Informace o nativní mobilní aplikaci pro Android a iOS"
-              >
-                <Smartphone className="w-3 h-3 text-emerald-400" />
-                <span>Nativní aplikace (APK)</span>
-              </button>
-            )}
             {browserPermission === 'granted' ? (
               <button
                 type="button"
                 onClick={handleSendTestNotification}
-                className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-200 font-bold rounded-lg text-[11px] shrink-0 transition cursor-pointer flex items-center gap-1 active:scale-95"
-                title="Odešle zkušební notifikaci do systému Android / prohlížeče"
+                className="px-2.5 py-1 bg-slate-800 hover:bg-slate-750 active:bg-slate-600 text-slate-200 font-bold rounded-lg text-[11px] shrink-0 transition cursor-pointer flex items-center gap-1 active:scale-95"
+                title="Odešle zkušební notifikaci do vašeho zařízení"
               >
-                <Smartphone className="w-3 h-3 text-slate-400" />
-                <span>Vyzkoušet v mobilu</span>
+                <Bell className="w-3 h-3 text-slate-400" />
+                <span>Otestovat</span>
               </button>
             ) : (
               <button
@@ -254,13 +243,14 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
         </div>
 
         {/* Action toolbar & Filters */}
-        <div className="px-3 sm:px-4 py-2.5 border-b border-slate-800 bg-slate-900 flex flex-col sm:flex-row sm:items-center justify-between gap-2 shrink-0">
+        <div className="px-3 sm:px-4 py-2.5 border-b border-slate-800 bg-slate-900 flex flex-col gap-2 shrink-0">
           
-          {/* Filter Pills */}
-          <div className="flex items-center space-x-1.5 text-xs overflow-x-auto py-0.5 -mx-1 px-1 scrollbar-none">
+          {/* Filter Pills - wrap cleanly without overflowing */}
+          <div className="flex flex-wrap items-center gap-1.5 text-xs w-full min-w-0">
             <button
+              type="button"
               onClick={() => setFilter('ALL')}
-              className={`px-3 py-1 rounded-lg font-bold transition cursor-pointer shrink-0 ${
+              className={`px-2.5 sm:px-3 py-1 rounded-lg font-bold transition cursor-pointer text-xs shrink-0 ${
                 filter === 'ALL'
                   ? 'bg-emerald-500 text-slate-950 shadow-sm'
                   : 'bg-slate-800 text-slate-300 hover:bg-slate-750'
@@ -269,8 +259,9 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
               Vše ({notifications.length})
             </button>
             <button
+              type="button"
               onClick={() => setFilter('UNREAD')}
-              className={`px-3 py-1 rounded-lg font-bold transition cursor-pointer shrink-0 ${
+              className={`px-2.5 sm:px-3 py-1 rounded-lg font-bold transition cursor-pointer text-xs shrink-0 ${
                 filter === 'UNREAD'
                   ? 'bg-emerald-500 text-slate-950 shadow-sm'
                   : 'bg-slate-800 text-slate-300 hover:bg-slate-750'
@@ -279,8 +270,9 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
               Nepřečtené ({unreadCount})
             </button>
             <button
+              type="button"
               onClick={() => setFilter('ATTENDANCE')}
-              className={`px-2.5 py-1 rounded-lg font-bold transition cursor-pointer shrink-0 ${
+              className={`px-2.5 py-1 rounded-lg font-bold transition cursor-pointer text-xs shrink-0 ${
                 filter === 'ATTENDANCE'
                   ? 'bg-amber-500 text-slate-950 shadow-sm'
                   : 'bg-slate-800 text-slate-300 hover:bg-slate-750'
@@ -289,8 +281,9 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
               Docházka
             </button>
             <button
+              type="button"
               onClick={() => setFilter('EVENTS')}
-              className={`px-2.5 py-1 rounded-lg font-bold transition cursor-pointer shrink-0 ${
+              className={`px-2.5 py-1 rounded-lg font-bold transition cursor-pointer text-xs shrink-0 ${
                 filter === 'EVENTS'
                   ? 'bg-emerald-500 text-slate-950 shadow-sm'
                   : 'bg-slate-800 text-slate-300 hover:bg-slate-750'
@@ -299,8 +292,9 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
               Události
             </button>
             <button
+              type="button"
               onClick={() => setFilter('CHAT')}
-              className={`px-2.5 py-1 rounded-lg font-bold transition cursor-pointer shrink-0 ${
+              className={`px-2.5 py-1 rounded-lg font-bold transition cursor-pointer text-xs shrink-0 ${
                 filter === 'CHAT'
                   ? 'bg-blue-500 text-white shadow-sm'
                   : 'bg-slate-800 text-slate-300 hover:bg-slate-750'
@@ -311,32 +305,34 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
           </div>
 
           {/* Quick Bulk Actions */}
-          <div className="flex items-center justify-end space-x-2 text-xs shrink-0 pt-1 sm:pt-0">
-            {unreadCount > 0 && (
-              <button
-                type="button"
-                onClick={handleMarkAllAsRead}
-                disabled={isMarkingRead}
-                className="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 font-bold flex items-center gap-1 transition cursor-pointer"
-                title="Označit vše jako přečtené"
-              >
-                <CheckCheck className="w-3.5 h-3.5" />
-                <span>{isMarkingRead ? 'Ukládám...' : 'Vše přečteno'}</span>
-              </button>
-            )}
-            {notifications.length > 0 && (
-              <button
-                type="button"
-                onClick={handleClearAll}
-                disabled={isClearing}
-                className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-rose-950/80 text-slate-300 hover:text-rose-300 font-bold flex items-center gap-1 transition cursor-pointer active:scale-95"
-                title="Smazat všechna oznámení"
-              >
-                <Trash2 className="w-3.5 h-3.5 text-rose-400" />
-                <span>{isClearing ? 'Mažu...' : 'Vymazat vše'}</span>
-              </button>
-            )}
-          </div>
+          {(unreadCount > 0 || notifications.length > 0) && (
+            <div className="flex items-center justify-end gap-2 text-xs pt-1 border-t border-slate-800/60">
+              {unreadCount > 0 && (
+                <button
+                  type="button"
+                  onClick={handleMarkAllAsRead}
+                  disabled={isMarkingRead}
+                  className="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 font-bold flex items-center gap-1 transition cursor-pointer text-xs"
+                  title="Označit vše jako přečtené"
+                >
+                  <CheckCheck className="w-3.5 h-3.5" />
+                  <span>{isMarkingRead ? 'Ukládám...' : 'Vše přečteno'}</span>
+                </button>
+              )}
+              {notifications.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleClearAll}
+                  disabled={isClearing}
+                  className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-rose-950/80 text-slate-300 hover:text-rose-300 font-bold flex items-center gap-1 transition cursor-pointer text-xs active:scale-95"
+                  title="Smazat všechna oznámení"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                  <span>{isClearing ? 'Mažu...' : 'Vymazat vše'}</span>
+                </button>
+              )}
+            </div>
+          )}
 
         </div>
 

@@ -1057,21 +1057,21 @@ export const EventCard: React.FC<EventCardProps> = ({
                 <span>Diskuze k této události je uzavřena, protože událost již proběhla.</span>
               </div>
             ) : (
-              <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
+              <form onSubmit={handleSendMessage} className="flex items-center gap-2 w-full min-w-0 max-w-full">
                 <input
                   type="text"
                   placeholder="Napište zprávu k události..."
                   value={newMessageText}
                   onChange={(e) => setNewMessageText(e.target.value)}
-                  className="flex-1 px-3.5 py-2.5 bg-slate-800 text-white placeholder-slate-400 rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500 shadow-sm outline-none"
+                  className="flex-1 min-w-0 px-3 sm:px-3.5 py-2 sm:py-2.5 bg-slate-800 text-white placeholder-slate-400 rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500 shadow-sm outline-none"
                 />
                 <button
                   type="submit"
                   disabled={sendingMsg || !newMessageText.trim()}
-                  className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 font-bold rounded-xl shadow-md text-xs flex items-center space-x-1 transition disabled:opacity-50 cursor-pointer"
+                  className="px-3 sm:px-4 py-2 sm:py-2.5 shrink-0 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 font-bold rounded-xl shadow-md text-xs flex items-center justify-center gap-1 transition disabled:opacity-50 cursor-pointer"
                 >
                   <span>Odeslat</span>
-                  <Send className="w-3.5 h-3.5 ml-1" />
+                  <Send className="w-3.5 h-3.5 shrink-0" />
                 </button>
               </form>
             )}

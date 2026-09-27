@@ -123,7 +123,12 @@ export const Header: React.FC<HeaderProps> = ({
                   title="Přepnout aktivní tým nebo přehled"
                 >
                   {isAllTeamsSelected ? (
-                    <LayoutDashboard className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <>
+                      <LayoutDashboard className="w-3.5 h-3.5 text-emerald-400 mr-1 sm:mr-1.5 shrink-0" />
+                      <span className="text-[11px] sm:text-xs font-semibold text-white truncate">
+                        Vše
+                      </span>
+                    </>
                   ) : (
                     <>
                       <Users className="w-3.5 h-3.5 text-emerald-400 mr-1 sm:mr-1.5 shrink-0" />

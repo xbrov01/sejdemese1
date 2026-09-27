@@ -19,6 +19,7 @@ import { UserProfileModal } from './components/UserProfileModal';
 import { NotificationModal } from './components/NotificationModal';
 import { NativeAppModal } from './components/NativeAppModal';
 import { EventCard } from './components/EventCard';
+import { BottomToolbar } from './components/BottomToolbar';
 import { isEventPast } from './utils/eventUtils';
 import { checkAndGenerateReminders, showBrowserNotification, sendEventCancelledNotifications } from './utils/notificationService';
 import { getMemberDisplayName } from './utils/userUtils';
@@ -562,16 +563,24 @@ export default function App() {
                       <span className="text-[11px] font-semibold text-slate-400 mr-1 hidden sm:inline">
                         Přejít na tým:
                       </span>
-                      {teams.map((t) => (
-                        <button
-                          key={t.id}
-                          type="button"
-                          onClick={() => setActiveTeamId(t.id)}
-                          className="px-3 py-1.5 bg-slate-800 hover:bg-slate-750 active:bg-slate-700 text-slate-200 text-xs rounded-xl font-bold transition shrink-0 cursor-pointer shadow-xs"
-                        >
-                          {t.name}
-                        </button>
-                      ))}
+                      {teams.map((t) => {
+                        const upcomingCount = allEvents.filter((e) => e.teamId === t.id && !isEventPast(e)).length;
+                        return (
+                          <button
+                            key={t.id}
+                            type="button"
+                            onClick={() => setActiveTeamId(t.id)}
+                            className="px-3 py-1.5 bg-slate-800 hover:bg-slate-750 active:bg-slate-700 text-slate-200 text-xs rounded-xl font-bold transition shrink-0 cursor-pointer shadow-xs flex items-center gap-1.5"
+                          >
+                            <span>{t.name}</span>
+                            {upcomingCount > 0 && (
+                              <span className="text-[10px] font-black text-slate-950 bg-emerald-400 px-1.5 py-0.2 rounded-full min-w-4 text-center leading-tight">
+                                {upcomingCount}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
 
                     {events.length === 0 && (
@@ -815,55 +824,18 @@ export default function App() {
         </div>
       </footer>
 
-      {/* Ergonomic Mobile Bottom Navigation Bar */}
+      {/* Ergonomic Mobile Bottom Navigation Bar with Team Selector */}
       {currentUser && (
-        <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 backdrop-blur-md border-t border-slate-800 px-3 py-2 flex items-center justify-around shadow-2xl">
-          <button
-            type="button"
-            onClick={() => setActiveTeamId('ALL')}
-            className={`flex flex-col items-center gap-1 py-1 px-4 rounded-xl transition cursor-pointer ${
-              isAllTeamsSelected ? 'bg-slate-800 text-emerald-400 font-bold' : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <LayoutDashboard className="w-5 h-5" />
-            <span className="text-[10px]">Přehled</span>
-          </button>
-
-          {teams.length > 0 && (
-            <button
-              type="button"
-              onClick={() => {
-                if (isAllTeamsSelected && teams[0]) {
-                  setActiveTeamId(teams[0].id);
-                } else {
-                  setTeamModalMode('members');
-                }
-              }}
-              className={`flex flex-col items-center gap-1 py-1 px-4 rounded-xl transition cursor-pointer ${
-                !isAllTeamsSelected ? 'bg-slate-800 text-emerald-400 font-bold' : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <Users className="w-5 h-5" />
-              <span className="text-[10px]">Tým</span>
-            </button>
-          )}
-
-          <button
-            type="button"
-            onClick={() => setShowNotificationModal(true)}
-            className="flex flex-col items-center gap-1 py-1 px-4 rounded-xl text-slate-400 hover:text-emerald-400 transition cursor-pointer relative"
-          >
-            <div className="relative">
-              <Bell className="w-5 h-5" />
-              {unreadNotificationCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[9px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center shadow-xs animate-pulse">
-                  {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
-                </span>
-              )}
-            </div>
-            <span className="text-[10px]">Zprávy</span>
-          </button>
-        </nav>
+        <BottomToolbar
+          currentUser={currentUser}
+          teams={teams}
+          activeTeam={activeTeam}
+          isAllTeamsSelected={isAllTeamsSelected}
+          unreadNotificationCount={unreadNotificationCount}
+          onSelectAllTeams={() => setActiveTeamId('ALL')}
+          onSelectTeam={(team) => setActiveTeamId(team.id)}
+          onOpenNotifications={() => setShowNotificationModal(true)}
+        />
       )}
 
       {/* Auth Modal */}
