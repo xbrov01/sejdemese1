@@ -44,7 +44,7 @@ if [ ! -d "$ANDROID_HOME/cmdline-tools/latest" ]; then
     
     echo "Accepting licenses and installing SDK packages..."
     yes | sdkmanager --licenses > /dev/null
-    sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+    sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 else
     echo "Android SDK already present."
 fi
