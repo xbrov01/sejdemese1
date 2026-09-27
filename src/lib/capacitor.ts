@@ -53,27 +53,15 @@ export async function initPushNotifications(
   onNotificationAction?: (action: ActionPerformed) => void
 ): Promise<string | null> {
   if (!isNative) {
-    console.log('[Capacitor] Běží ve webovém prohlížeči, nativní FCM Push plugin není aktivní.');
+    console.log('[Capacitor] Běží ve webovém prohlížeči, nativní Push plugin není aktivní.');
     return null;
   }
 
   try {
-    // 1. Zkontrolovat a vyžádat oprávnění
-    let permStatus = await PushNotifications.checkPermissions();
-
-    if (permStatus.receive === 'prompt') {
-      permStatus = await PushNotifications.requestPermissions();
-    }
-
-    if (permStatus.receive !== 'granted') {
-      console.warn('[Capacitor] Oprávnění k Push notifikacím nebylo uděleno:', permStatus.receive);
-      return null;
-    }
-
-    // 2. Vytvořit notifikační kanál na Androidu
+    // 1. Nejprve vytvořit notifikační kanál na Androidu přes LocalNotifications (100% stabilní, bez závislosti na FCM)
     if (Capacitor.getPlatform() === 'android') {
       try {
-        await PushNotifications.createChannel({
+        await LocalNotifications.createChannel({
           id: 'sejdemese_notifications',
           name: 'Oznámení Sejdeme se',
           description: 'Upozornění na události, docházku a týmový chat',
@@ -83,51 +71,89 @@ export async function initPushNotifications(
           lights: true,
           lightColor: '#10B981',
         });
-      } catch (channelErr) {
-        console.warn('[Capacitor] Nelze vytvořit push kanál (pokračuji):', channelErr);
+      } catch (chErr) {
+        console.warn('[Capacitor] Nelze vytvořit lokální kanál:', chErr);
       }
     }
 
-    // 3. Zaregistrovat zařízení v FCM / APNS
+    // 2. Registrace listenerů pro Push notifikace VŽDY PŘED jakýmkoliv voláním register()
+    try {
+      PushNotifications.addListener('registration', async (token: Token) => {
+        console.log('[Capacitor] Push token přijat:', token.value);
+        if (userEmail) {
+          await saveUserDeviceToken(userEmail, token.value, currentPlatform as any);
+        }
+      });
+
+      PushNotifications.addListener('registrationError', (error: any) => {
+        console.warn('[Capacitor] Push registrace se nezdařila (systém spolehlivě běží na lokálních notifikacích):', error);
+      });
+
+      PushNotifications.addListener('pushNotificationReceived', async (notification: PushNotificationSchema) => {
+        console.log('[Capacitor] Push notifikace přijata (popředí):', notification);
+        
+        // Zobrazit jako lokální notifikaci i v popředí na telefonu
+        await scheduleNativeNotification({
+          title: notification.title || 'Sejdeme se',
+          body: notification.body || '',
+          data: notification.data,
+        });
+
+        if (onNotificationReceived) {
+          onNotificationReceived(notification);
+        }
+      });
+
+      PushNotifications.addListener('pushNotificationActionPerformed', (action: ActionPerformed) => {
+        console.log('[Capacitor] Uživatel kliknul na push notifikaci:', action);
+        if (onNotificationAction) {
+          onNotificationAction(action);
+        }
+      });
+    } catch (listenersErr) {
+      console.warn('[Capacitor] Chyba při registraci push listenerů:', listenersErr);
+    }
+
+    // 3. Požádat o oprávnění k notifikacím primárně přes LocalNotifications
+    let localPerm = await LocalNotifications.checkPermissions();
+    if (localPerm.display === 'prompt') {
+      localPerm = await LocalNotifications.requestPermissions();
+    }
+
+    if (localPerm.display !== 'granted') {
+      console.warn('[Capacitor] Oprávnění k notifikacím nebylo uživatelem uděleno.');
+      return null;
+    }
+
+    // 4. Synchronizovat oprávnění a kanál i v Push pluginu
+    try {
+      const pushPerm = await PushNotifications.checkPermissions();
+      if (pushPerm.receive === 'prompt') {
+        await PushNotifications.requestPermissions();
+      }
+
+      if (Capacitor.getPlatform() === 'android') {
+        await PushNotifications.createChannel({
+          id: 'sejdemese_notifications',
+          name: 'Oznámení Sejdeme se',
+          description: 'Upozornění na události, docházku a týmový chat',
+          importance: 5,
+          visibility: 1,
+          vibration: true,
+          lights: true,
+          lightColor: '#10B981',
+        });
+      }
+    } catch (pushChanErr) {
+      console.warn('[Capacitor] Push channel konfigurace přeskočena:', pushChanErr);
+    }
+
+    // 5. Bezpečný pokus o FCM / APNS registraci (pokud selže, aplikace pokračuje dál bez pádu)
     try {
       await PushNotifications.register();
     } catch (regErr) {
-      console.warn('[Capacitor] PushNotifications.register varování (aplikace pokračuje dál):', regErr);
+      console.warn('[Capacitor] PushNotifications.register přeskočeno nebo selhalo:', regErr);
     }
-
-    // 4. Nastavit listenery
-    PushNotifications.addListener('registration', async (token: Token) => {
-      console.log('[Capacitor] Push token přijat:', token.value);
-      if (userEmail) {
-        await saveUserDeviceToken(userEmail, token.value, currentPlatform as any);
-      }
-    });
-
-    PushNotifications.addListener('registrationError', (error: any) => {
-      console.error('[Capacitor] Chyba registrace do Push služby:', error);
-    });
-
-    PushNotifications.addListener('pushNotificationReceived', async (notification: PushNotificationSchema) => {
-      console.log('[Capacitor] Push notifikace přijata (popředí):', notification);
-      
-      // Zobrazit jako lokální notifikaci i v popředí na telefonu
-      await scheduleNativeNotification({
-        title: notification.title || 'Sejdeme se',
-        body: notification.body || '',
-        data: notification.data,
-      });
-
-      if (onNotificationReceived) {
-        onNotificationReceived(notification);
-      }
-    });
-
-    PushNotifications.addListener('pushNotificationActionPerformed', (action: ActionPerformed) => {
-      console.log('[Capacitor] Uživatel kliknul na push notifikaci:', action);
-      if (onNotificationAction) {
-        onNotificationAction(action);
-      }
-    });
 
     return 'registered';
   } catch (err) {
@@ -152,6 +178,23 @@ export async function scheduleNativeNotification(options: {
     if (perm.display !== 'granted') {
       perm = await LocalNotifications.requestPermissions();
       if (perm.display !== 'granted') return false;
+    }
+
+    if (Capacitor.getPlatform() === 'android') {
+      try {
+        await LocalNotifications.createChannel({
+          id: 'sejdemese_notifications',
+          name: 'Oznámení Sejdeme se',
+          description: 'Upozornění na události, docházku a týmový chat',
+          importance: 5,
+          visibility: 1,
+          vibration: true,
+          lights: true,
+          lightColor: '#10B981',
+        });
+      } catch {
+        // Ignorovat, kanál již pravděpodobně existuje
+      }
     }
 
     const notifId = options.id || Math.floor(Math.random() * 2147483647);
