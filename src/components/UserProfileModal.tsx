@@ -701,7 +701,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 font-black rounded-xl shadow-md transition disabled:opacity-50 text-xs sm:text-sm flex items-center justify-center space-x-1.5 cursor-pointer"
           >
             <Check className="w-4 h-4 stroke-[3]" />
-            <span>{loading ? 'Ukládání...' : 'Uložit změny'}</span>
+            <span>{loading ? 'Ukládání...' : 'Uložit'}</span>
           </button>
         </div>
 
