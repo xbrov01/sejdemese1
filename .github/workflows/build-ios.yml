@@ -37,7 +37,7 @@ jobs:
           # Ensure Podfile exists
           if [ ! -f ios/App/Podfile ]; then
             echo "Podfile not found. Reinitializing iOS platform..."
-            npx cap remove ios
+            rm -rf ios
             npx cap add ios
             npx cap sync ios
           fi          
