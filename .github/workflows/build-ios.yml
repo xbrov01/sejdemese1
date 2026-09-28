@@ -21,9 +21,12 @@ jobs:
           cache: 'npm'
 
       - name: Install Dependencies
+        shell: bash
         run: |
           npm ci --include=optional
-          npm rebuild
+          npm install --no-save --include=optional @tailwindcss/oxide-darwin-arm64
+          npm rebuild @tailwindcss/oxide --force
+          node -e "require('@tailwindcss/oxide'); console.log('Tailwind Oxide loaded successfully')"
 
       - name: Build Web Assets & Sync Capacitor iOS
         run: |
