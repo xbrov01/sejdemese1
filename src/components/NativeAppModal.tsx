@@ -322,10 +322,10 @@ export const NativeAppModal: React.FC<NativeAppModalProps> = ({ currentUser, onC
               <div>
                 <h4 className="font-bold text-slate-900 text-sm flex items-center gap-1.5">
                   <Apple className="w-4 h-4 text-slate-800" />
-                  <span>Jak sestavit verzi pro iPhone (iOS & Xcode)</span>
+                  <span>Sestavení a běh aplikace pro iPhone (iOS & Xcode)</span>
                 </h4>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Capacitor je 100% kompatibilní s iOS. Aplikace nevyžaduje žádné změny v kódu.
+                  Nativní projekt pro iOS je již vygenerován a synchronizován v adresáři <code>ios/</code>.
                 </p>
               </div>
 
@@ -334,22 +334,22 @@ export const NativeAppModal: React.FC<NativeAppModalProps> = ({ currentUser, onC
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-slate-900 text-xs flex items-center gap-2">
                     <span className="w-5 h-5 rounded-full bg-slate-800 text-white flex items-center justify-center text-[10px] font-bold">1</span>
-                    Přidání iOS platformy (na počítači Mac)
+                    Sestavení a synchronizace změn do iOS projektu
                   </span>
                   <button
                     type="button"
-                    onClick={() => handleCopy('npx cap add ios')}
+                    onClick={() => handleCopy('npm run cap:build')}
                     className="text-[11px] text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-1 cursor-pointer"
                   >
-                    {copiedCommand === 'npx cap add ios' ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                    {copiedCommand === 'npm run cap:build' ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
                     <span>Kopírovat</span>
                   </button>
                 </div>
                 <div className="bg-slate-900 text-emerald-400 p-2.5 rounded-lg font-mono text-xs flex items-center justify-between">
-                  <span>npx cap add ios</span>
+                  <span>npm run cap:build</span>
                 </div>
                 <p className="text-[11px] text-slate-500">
-                  Vygeneruje nativní Xcode projekt ve složce <code>ios/</code>.
+                  Zkompiluje webové assety do <code>dist/</code> a synchronizuje je do <code>ios/App/App/public</code>.
                 </p>
               </div>
 
@@ -373,7 +373,18 @@ export const NativeAppModal: React.FC<NativeAppModalProps> = ({ currentUser, onC
                   <span>npm run cap:ios</span>
                 </div>
                 <p className="text-[11px] text-slate-500">
-                  Otevře projekt v Apple Xcode pro spuštění na simulátoru, fyzickém iPhone nebo odeslání do TestFlight.
+                  Otevře <code>ios/App/App.xcworkspace</code> v Apple Xcode pro spuštění na simulátoru, fyzickém iPhone nebo odeslání do TestFlight / App Store.
+                </p>
+              </div>
+
+              {/* Step iOS 3 */}
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                <span className="font-bold text-slate-900 text-xs flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-slate-800 text-white flex items-center justify-center text-[10px] font-bold">3</span>
+                  Spuštění na simulátoru nebo iPhonu
+                </span>
+                <p className="text-[11px] text-slate-600">
+                  V Xcode zvolte cílové zařízení a stiskněte <kbd className="px-1.5 py-0.5 bg-slate-200 rounded text-slate-800 font-mono text-[10px]">Cmd + R</kbd>. Pro distribuci zvolte <strong className="text-slate-800">Product &gt; Archive</strong>.
                 </p>
               </div>
             </div>

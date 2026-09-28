@@ -33,15 +33,29 @@ Pro vydání do obchodu Google Play zvolte:
 
 ## 🍏 Verze pro iPhone (iOS)
 
-Kdykoli budete chtít vytvořit verzi pro iPhone / iOS (na počítači s macOS a Xcode):
+Nativní projekt pro iOS v adresáři `/ios` je plně vygenerován, nakonfigurován a synchronizován.
 
+### 1. Sestavení a synchronizace
 ```bash
-# Přidání nativního iOS projektu
-npx cap add ios
+npm run cap:build
+# nebo specificky pro iOS:
+npx cap sync ios
+```
 
-# Otevření v Xcode
+### 2. Otevření v Xcode (na macOS)
+```bash
 npm run cap:ios
 ```
+Nebo otevřete soubor `ios/App/App.xcworkspace` v Xcode.
+
+### 3. Sestavení a běh na iOS
+- V Xcode zvolte cílové zařízení (iPhone simulátor nebo připojený fyzický iPhone).
+- Klikněte na tlačítko **Run** (Cmd + R) pro sestavení a spuštění.
+- Pro distribuci přes TestFlight / App Store zvolte **Product > Archive**.
+
+### 4. Nastavení push notifikací pro iOS (APNs / Firebase)
+- V Xcode v záložce **Signing & Capabilities** přidejte schopnost **Push Notifications** a **Background Modes (Remote notifications)**.
+- V [Firebase Console](https://console.firebase.google.com/) přidejte iOS aplikaci s Bundle ID `cz.sejdemese.app` a stáhněte soubor `GoogleService-Info.plist` do `ios/App/App/`.
 
 ---
 

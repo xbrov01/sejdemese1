@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="v1-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="50%" stop-color="#09111e" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+
+    <linearGradient id="v1-primary" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399" />
+      <stop offset="50%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+
+    <linearGradient id="v1-cyan" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#06b6d4" />
+      <stop offset="50%" stop-color="#14b8a6" />
+      <stop offset="100%" stop-color="#10b981" />
+    </linearGradient>
+
+    <radialGradient id="v1-glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.3" />
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0" />
+    </radialGradient>
+
+    <linearGradient id="v1-gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#f59e0b" />
+    </linearGradient>
+
+    <filter id="v1-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#059669" flood-opacity="0.45" />
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.6" />
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" rx="120" fill="url(#v1-bg)" />
+  <rect width="512" height="512" rx="120" fill="none" stroke="#334155" stroke-width="3" opacity="0.6" />
+  
+  <circle cx="256" cy="256" r="200" fill="url(#v1-glow)" />
+
+  <!-- Orbit nodes -->
+  <g opacity="0.95">
+    <circle cx="256" cy="96" r="20" fill="url(#v1-cyan)" />
+    <circle cx="256" cy="96" r="10" fill="#ffffff" opacity="0.9" />
+
+    <circle cx="118" cy="336" r="18" fill="url(#v1-primary)" />
+    <circle cx="118" cy="336" r="9" fill="#ffffff" opacity="0.9" />
+
+    <circle cx="394" cy="336" r="18" fill="url(#v1-primary)" />
+    <circle cx="394" cy="336" r="9" fill="#ffffff" opacity="0.9" />
+  </g>
+
+  <!-- Flowing 'S' ribbons -->
+  <g filter="url(#v1-shadow)">
+    <path d="M 256,96 C 170,96 118,160 118,246 C 118,300 148,348 200,372 C 214,378 228,368 228,352 C 228,340 218,330 206,324 C 174,306 156,274 156,240 C 156,186 196,134 256,134 C 270,134 282,122 282,108 C 282,96 270,96 256,96 Z" 
+          fill="url(#v1-cyan)" />
+
+    <path d="M 256,416 C 342,416 394,352 394,266 C 394,212 364,164 312,140 C 298,134 284,144 284,160 C 284,172 294,182 306,188 C 338,206 356,238 356,272 C 356,326 316,378 256,378 C 242,378 230,390 230,404 C 230,416 242,416 256,416 Z" 
+          fill="url(#v1-primary)" />
+
+    <!-- Center Badge -->
+    <circle cx="256" cy="256" r="64" fill="#0b1329" stroke="url(#v1-cyan)" stroke-width="5" />
+    <circle cx="256" cy="256" r="52" fill="url(#v1-primary)" opacity="0.25" />
+
+    <!-- Checkmark -->
+    <path d="M 226,258 L 248,280 L 292,232" 
+          fill="none" stroke="#ffffff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" />
+
+    <!-- Question dot -->
+    <circle cx="358" cy="138" r="9" fill="url(#v1-gold)" />
+  </g>
+</svg>
