@@ -34,14 +34,21 @@ jobs:
 
           npx cap sync ios
 
-          # Ensure Podfile exists
+          # Ensure Podfile exists - check and reinitialize if needed
           if [ ! -f ios/App/Podfile ]; then
             echo "Podfile not found. Reinitializing iOS platform..."
             rm -rf ios
             npx cap add ios
             npx cap sync ios
-          fi          
-
+            
+            # Verify Podfile was created
+            if [ ! -f ios/App/Podfile ]; then
+              echo "ERROR: Podfile still not found after reinitialization"
+              find ios -type f -name "Podfile" 2>/dev/null
+              exit 1
+            fi
+          fi
+          
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode_15.4.app || sudo xcode-select -s /Applications/Xcode.app
 
