@@ -166,6 +166,8 @@ export default function App() {
       if (snap.exists()) {
         setCurrentUser({ id: snap.id, ...snap.data() } as UserProfile);
       }
+    }, (err) => {
+      console.warn('Upozornění: Dočasně nedostupný profil uživatele (offline mód):', err);
     });
     return () => unsubscribe();
   }, [currentUser?.email]);

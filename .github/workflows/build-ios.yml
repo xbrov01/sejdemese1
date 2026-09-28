@@ -21,7 +21,9 @@ jobs:
           cache: 'npm'
 
       - name: Install Dependencies
-        run: npm ci --include=optional
+        run: |
+          npm ci --include=optional
+          npm rebuild
 
       - name: Build Web Assets & Sync Capacitor iOS
         run: |
