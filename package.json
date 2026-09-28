@@ -13,7 +13,9 @@
     "cap:build": "vite build && cap sync",
     "cap:sync": "cap sync",
     "cap:android": "cap open android",
-    "cap:ios": "cap open ios"
+    "cap:ios": "cap open ios",
+    "build:apk": "bash build-apk.sh",
+    "build:ios": "bash build-ios.sh"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",

@@ -35,12 +35,14 @@ Pro vydání do obchodu Google Play zvolte:
 
 Nativní projekt pro iOS v adresáři `/ios` je plně vygenerován, nakonfigurován a synchronizován.
 
-### 1. Sestavení a synchronizace
+### 1. Automatické sestavení skriptem
 ```bash
-npm run cap:build
-# nebo specificky pro iOS:
-npx cap sync ios
+./build-ios.sh
+# nebo přes npm:
+npm run build:ios
 ```
+- Na **macOS** automaticky zkompiluje aplikaci pomocí `xcodebuild` pro iOS simulátor a vypíše cestu k `.app` balíčku.
+- Na **GitHub Actions** (`.github/workflows/build-ios.yml`) automaticky sestaví iOS balíček a vytvoří ke stažení `.zip` artefakt při každém pushi.
 
 ### 2. Otevření v Xcode (na macOS)
 ```bash
