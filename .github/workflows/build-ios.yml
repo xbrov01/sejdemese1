@@ -24,31 +24,31 @@ jobs:
         shell: bash
         run: npm ci --include=optional
 
-      - name: Build Web Assets & Sync Capacitor iOS
+      - name: Build Web Assets
+        run: npm run build
+
+      - name: Initialize iOS Platform
+        shell: bash
         run: |
-          npm run build
+          if [ -d ios ] && [ ! -f ios/App/Podfile ]; then
+            echo "iOS directory exists but is incomplete; regenerating..."
+            rm -rf ios
+          fi
 
           if [ ! -d ios ]; then
+            echo "Creating iOS platform..."
             npx cap add ios
           fi
 
-          npx cap sync ios
-
-          # Ensure Podfile exists - check and reinitialize if needed
           if [ ! -f ios/App/Podfile ]; then
-            echo "Podfile not found. Reinitializing iOS platform..."
-            rm -rf ios
-            npx cap add ios
-            npx cap sync ios
-            
-            # Verify Podfile was created
-            if [ ! -f ios/App/Podfile ]; then
-              echo "ERROR: Podfile still not found after reinitialization"
-              find ios -type f -name "Podfile" 2>/dev/null
-              exit 1
-            fi
+            echo "ERROR: Failed to create iOS platform"
+            find ios -maxdepth 4 -type f 2>/dev/null | sort
+            exit 1
           fi
-          
+
+      - name: Sync Capacitor
+        run: npx cap sync ios
+
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode_15.4.app || sudo xcode-select -s /Applications/Xcode.app
 
