@@ -7,6 +7,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 echo "=== 1. Building Web Assets & Syncing Capacitor iOS ==="
+if [ ! -d "node_modules" ] || [ ! -f "node_modules/.bin/vite" ]; then
+    echo "Dependencies not found or incomplete. Running npm install..."
+    npm install
+fi
+
+export PATH="$SCRIPT_DIR/node_modules/.bin:$PATH"
+
 npm run build
 npx cap sync ios
 

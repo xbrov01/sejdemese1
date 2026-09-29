@@ -64,6 +64,14 @@ if [ ! -f "package.json" ]; then
 fi
 
 echo "=== 3. Building Web Assets & Syncing Capacitor ==="
+if [ ! -d "node_modules" ] || [ ! -f "node_modules/.bin/vite" ]; then
+    echo "Dependencies not found or incomplete. Running npm install..."
+    npm install
+fi
+
+# Ensure local node_modules binaries (vite, npx cap, etc.) are available in PATH
+export PATH="$SCRIPT_DIR/node_modules/.bin:$PATH"
+
 npm run build
 npx cap sync android
 
