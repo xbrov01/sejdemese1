@@ -484,7 +484,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-slate-950 pb-20 sm:pb-8">
+    <div className="min-h-screen bg-slate-800 text-slate-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-slate-950 pb-20 sm:pb-8">
       
       {/* Header */}
       {currentUser && (
@@ -542,7 +542,7 @@ export default function App() {
             ) : isAllTeamsSelected ? (
               /* ================== PŘEHLED / DASHBOARD: VŠECHNY TÝMY ================== */
               <div className="space-y-6">
-                <div className="bg-slate-900 p-5 rounded-2xl shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="bg-slate-900 border border-slate-700/60 p-5 rounded-2xl shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>
                     <div className="text-[10px] uppercase font-bold text-emerald-400 tracking-wider flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -648,7 +648,7 @@ export default function App() {
             ) : activeTeam ? (
               /* ================== JEDNOTLIVÝ TÝM ================== */
               <div className="space-y-6">
-                <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900 p-4 sm:p-5 rounded-2xl shadow-xl">
+                <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900 border border-slate-700/60 p-4 sm:p-5 rounded-2xl shadow-xl">
                   <div>
                     <div className="text-[10px] uppercase font-bold text-emerald-400 tracking-wider">
                       Aktivní tým #{activeTeam.code}

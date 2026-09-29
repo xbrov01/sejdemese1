@@ -27,7 +27,7 @@ export const BottomToolbar: React.FC<BottomToolbarProps> = ({
   return (
     <>
       {/* Ergonomic Mobile Bottom Navigation Bar */}
-      <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 backdrop-blur-md border-t border-slate-800 px-3 py-2 flex items-center justify-around shadow-2xl">
+      <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md border-t border-slate-700/80 px-3 py-2 flex items-center justify-around shadow-2xl">
         {/* Přehled button */}
         <button
           type="button"

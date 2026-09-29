@@ -345,8 +345,8 @@ export const EventCard: React.FC<EventCardProps> = ({
   const dateInfo = formatCzechDateWithDay(event.date);
 
   return (
-    <div className={`bg-slate-900 rounded-2xl shadow-xl mb-6 transition relative overflow-hidden ${
-      isPast ? 'opacity-85 grayscale-[20%]' : 'hover:shadow-2xl hover:shadow-black/50'
+    <div className={`bg-slate-900 rounded-2xl shadow-xl border border-slate-700/60 mb-6 transition relative overflow-hidden ${
+      isPast ? 'opacity-85 grayscale-[20%]' : 'hover:shadow-2xl hover:shadow-black/40 hover:border-slate-600/80'
     }`}>
       
       {/* Event Header Card s integrovanými tlačítky pro zadání účasti a volitelným pozadím týmu */}

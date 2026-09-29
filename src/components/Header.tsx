@@ -86,7 +86,7 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="bg-slate-950 text-white sticky top-0 z-40 shadow-xl border-b border-slate-800">
+    <header className="bg-slate-900 text-white sticky top-0 z-40 shadow-lg border-b border-slate-700/70">
       <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-2">
         <div className="flex items-center justify-between gap-1 sm:gap-2 md:gap-3 min-w-0">
           
