@@ -73,12 +73,13 @@ export default function App() {
 
   const [loading, setLoading] = useState(true);
 
-  // 0a. Inicializace nativního vzhledu StatusBaru pro Capacitor (Android & iOS)
+  // 0a. Inicializace nativního vzhledu StatusBaru a nativních notifikací pro Capacitor (Android & iOS)
   useEffect(() => {
     setupNativeStatusBar();
+    initPushNotifications();
   }, []);
 
-  // 0b. Inicializace Push notifikací při přihlášení uživatele
+  // 0b. Inicializace Push notifikací při přihlášení uživatele (přiřazení tokenu k uživateli)
   useEffect(() => {
     if (currentUser?.email) {
       initPushNotifications(currentUser.email);

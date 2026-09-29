@@ -4,13 +4,38 @@ import { isEventPast } from './eventUtils';
 import { isNative, scheduleNativeNotification } from '../lib/capacitor';
 
 /**
+ * Zjistí aktuální stav oprávnění k notifikacím (pro nativní aplikaci i webový prohlížeč)
+ */
+export const checkNotificationPermissionStatus = async (): Promise<'granted' | 'denied' | 'default'> => {
+  if (isNative) {
+    try {
+      const { LocalNotifications } = await import('@capacitor/local-notifications');
+      const perm = await LocalNotifications.checkPermissions();
+      if (perm.display === 'granted') return 'granted';
+      if (perm.display === 'denied') return 'denied';
+      return 'default';
+    } catch {
+      return 'denied';
+    }
+  }
+
+  if (typeof window === 'undefined' || !('Notification' in window)) {
+    return 'denied';
+  }
+  return Notification.permission as 'granted' | 'denied' | 'default';
+};
+
+/**
  * Požádá o povolení notifikací (buď přes Capacitor na nativním zařízení nebo přes Web Notification API)
  */
 export const requestWebNotificationPermission = async (): Promise<NotificationPermission> => {
   if (isNative) {
     try {
       const { LocalNotifications } = await import('@capacitor/local-notifications');
-      const perm = await LocalNotifications.requestPermissions();
+      let perm = await LocalNotifications.checkPermissions();
+      if (perm.display !== 'granted') {
+        perm = await LocalNotifications.requestPermissions();
+      }
       return perm.display === 'granted' ? 'granted' : 'denied';
     } catch {
       return 'denied';

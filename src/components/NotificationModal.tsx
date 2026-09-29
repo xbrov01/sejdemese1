@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NotificationItem, NotificationType, UserProfile } from '../types';
 import {
   X,
@@ -26,7 +26,9 @@ import {
   clearAllNotifications,
   requestWebNotificationPermission,
   sendTestBrowserNotification,
+  checkNotificationPermissionStatus,
 } from '../utils/notificationService';
+import { isNative } from '../lib/capacitor';
 
 interface NotificationModalProps {
   currentUser?: UserProfile;
@@ -49,12 +51,17 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
 }) => {
   const activeEmail = currentUserEmail || currentUser?.email || '';
   const [filter, setFilter] = useState<'ALL' | 'UNREAD' | 'EVENTS' | 'ATTENDANCE' | 'CHAT'>('ALL');
-  const [browserPermission, setBrowserPermission] = useState<NotificationPermission>(() => {
-    return typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'denied';
-  });
+  const [browserPermission, setBrowserPermission] = useState<string>('default');
   const [isClearing, setIsClearing] = useState(false);
   const [isMarkingRead, setIsMarkingRead] = useState(false);
   const [testStatus, setTestStatus] = useState<string | null>(null);
+
+  // Zjištění aktuálního stavu oprávnění při otevření modálu (funguje pro nativní aplikaci i web)
+  useEffect(() => {
+    checkNotificationPermissionStatus().then((status) => {
+      setBrowserPermission(status);
+    });
+  }, []);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -200,14 +207,16 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
                 <div className="w-2 h-2 rounded-full bg-emerald-400 shrink-0 animate-pulse" />
                 <span className="text-[11px] font-semibold text-emerald-300 flex items-center gap-1.5">
                   <Bell className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  Systémová oznámení jsou aktivní
+                  {isNative ? 'Nativní oznámení jsou aktivní' : 'Systémová oznámení jsou aktivní'}
                 </span>
               </>
             ) : (
               <>
                 <Volume2 className="w-4 h-4 text-amber-400 shrink-0" />
                 <span className="text-[11px] text-amber-200/90 font-medium">
-                  Systémová oznámení nejsou v prohlížeči povolena
+                  {isNative
+                    ? 'Oprávnění k oznámením není v systému uděleno'
+                    : 'Systémová oznámení nejsou v prohlížeči povolena'}
                 </span>
               </>
             )}
