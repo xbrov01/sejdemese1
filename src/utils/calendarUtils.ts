@@ -62,7 +62,8 @@ export function getGoogleCalendarUrl(event: Event, activeTeam?: Team | null): st
   const endStr = formatDateToUtcCompact(end);
 
   const teamName = activeTeam ? `Tým: ${activeTeam.name} (#${activeTeam.code})\n` : '';
-  const details = `${teamName}Aplikace Sejdeme se?\nDocházka a podrobnosti v týmové aplikaci.`;
+  const descPart = event.description ? `Popis: ${event.description}\n\n` : '';
+  const details = `${descPart}${teamName}Aplikace Sejdeme se?\nDocházka a podrobnosti v týmové aplikaci.`;
 
   const params = new URLSearchParams({
     action: 'TEMPLATE',
@@ -81,7 +82,8 @@ export function getGoogleCalendarUrl(event: Event, activeTeam?: Team | null): st
 export function getOutlookCalendarUrl(event: Event, activeTeam?: Team | null): string {
   const { start, end } = getEventDateRange(event);
   const teamName = activeTeam ? `Tým: ${activeTeam.name} (#${activeTeam.code})\n` : '';
-  const details = `${teamName}Aplikace Sejdeme se?\nDocházka a podrobnosti v týmové aplikaci.`;
+  const descPart = event.description ? `Popis: ${event.description}\n\n` : '';
+  const details = `${descPart}${teamName}Aplikace Sejdeme se?\nDocházka a podrobnosti v týmové aplikaci.`;
 
   const params = new URLSearchParams({
     path: '/calendar/action/compose',
@@ -102,7 +104,8 @@ export function getOutlookCalendarUrl(event: Event, activeTeam?: Team | null): s
 export function getYahooCalendarUrl(event: Event, activeTeam?: Team | null): string {
   const { start, end } = getEventDateRange(event);
   const teamName = activeTeam ? `Tým: ${activeTeam.name} (#${activeTeam.code})\n` : '';
-  const details = `${teamName}Aplikace Sejdeme se?\nDocházka a podrobnosti v týmové aplikaci.`;
+  const descPart = event.description ? `Popis: ${event.description}\n\n` : '';
+  const details = `${descPart}${teamName}Aplikace Sejdeme se?\nDocházka a podrobnosti v týmové aplikaci.`;
 
   const params = new URLSearchParams({
     v: '60',
@@ -127,7 +130,8 @@ export function downloadIcsFile(event: Event, activeTeam?: Team | null): void {
   const nowStr = formatDateToUtcCompact(new Date());
 
   const teamName = activeTeam ? `Tým: ${activeTeam.name} (#${activeTeam.code})\n` : '';
-  const description = `${teamName}Aplikace Sejdeme se?\nDocházka a podrobnosti v týmové aplikaci.`
+  const descPart = event.description ? `Popis: ${event.description}\n\n` : '';
+  const description = `${descPart}${teamName}Aplikace Sejdeme se?\nDocházka a podrobnosti v týmové aplikaci.`
     .replace(/\n/g, '\\n')
     .replace(/,/g, '\\,');
 

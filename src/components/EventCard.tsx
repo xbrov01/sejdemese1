@@ -9,6 +9,7 @@ import {
   getYahooCalendarUrl,
   downloadIcsFile
 } from '../utils/calendarUtils';
+import { hexToRgba, getContrastingTextColor, getSolidLighterShade } from '../utils/themePresets';
 import {
   db,
   collection,
@@ -343,24 +344,25 @@ export const EventCard: React.FC<EventCardProps> = ({
   };
 
   const dateInfo = formatCzechDateWithDay(event.date);
+  const teamColor = activeTeam?.cardBgColor || '#059669';
 
   return (
-    <div className={`bg-slate-900 rounded-2xl shadow-xl border border-slate-700/60 mb-6 transition relative overflow-hidden ${
-      isPast ? 'opacity-85 grayscale-[20%]' : 'hover:shadow-2xl hover:shadow-black/40 hover:border-slate-600/80'
+    <div className={`bg-white rounded-2xl shadow-xs border border-slate-200/90 mb-5 transition relative overflow-hidden ${
+      isPast ? 'opacity-85 grayscale-[15%]' : 'hover:shadow-sm hover:border-slate-300'
     }`}>
       
-      {/* Event Header Card s integrovanými tlačítky pro zadání účasti a volitelným pozadím týmu */}
+      {/* Event Header Card s integrovanými tlačítky pro zadání účasti - Clean Athletic světlý styl */}
       <div
-        className={`p-4 sm:p-5 text-white flex flex-col gap-3.5 relative z-20 transition-all duration-300 ${
-          isCardExpanded ? 'rounded-t-2xl' : 'rounded-2xl'
-        }`}
+        className={`p-4 sm:p-5 bg-white text-slate-900 flex flex-col gap-3.5 relative z-20 transition-all duration-300 ${
+          isCardExpanded ? 'rounded-t-2xl border-b border-slate-150' : 'rounded-2xl'
+        } border-l-4`}
         style={{
-          backgroundColor: activeTeam?.cardBgColor || '#0a0f1d',
-          backgroundImage: activeTeam?.cardBgImage
-            ? `linear-gradient(to right, rgba(10, 15, 29, 0.90), rgba(10, 15, 29, 0.75)), url(${activeTeam.cardBgImage})`
-            : undefined,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
+          borderLeftColor: isPast ? '#94a3b8' : teamColor,
+          ...(activeTeam?.cardBgImage ? {
+            backgroundImage: `linear-gradient(to right, rgba(255, 255, 255, 0.78) 0%, rgba(255, 255, 255, 0.52) 100%), url(${activeTeam.cardBgImage})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          } : {})
         }}
       >
         
@@ -371,56 +373,87 @@ export const EventCard: React.FC<EventCardProps> = ({
             onClick={() => setIsCardExpanded(!isCardExpanded)}
             title={isCardExpanded ? 'Kliknutím sbalíte kartu události' : 'Kliknutím rozbalíte všechny podrobnosti'}
           >
-            {/* Datum s dnem v týdnu */}
-            <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-400 mb-0.5">
-              <Calendar className="w-3.5 h-3.5 shrink-0" />
+            {/* Datum s dnem v týdnu - podbarvené plně neprůhledným (solid) světlým odstínem barvy týmu (nebo šedé pro uplynulé) */}
+            <div
+              className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-lg mb-1 border shadow-2xs ${
+                isPast
+                  ? 'bg-slate-100 text-slate-700 border-slate-200'
+                  : ''
+              }`}
+              style={
+                isPast
+                  ? undefined
+                  : {
+                      backgroundColor: getSolidLighterShade(teamColor, 0.14),
+                      borderColor: getSolidLighterShade(teamColor, 0.32),
+                      color: getContrastingTextColor(teamColor),
+                    }
+              }
+            >
+              <Calendar
+                className={`w-3.5 h-3.5 shrink-0 ${isPast ? 'text-slate-500' : ''}`}
+                style={isPast ? undefined : { color: teamColor }}
+              />
               <span>
                 <span className="sm:hidden">{dateInfo.shortLabel}</span>
                 <span className="hidden sm:inline">{dateInfo.fullLabel}</span>
               </span>
-              {isPast && (
-                <span className="bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded text-[10px] font-bold ml-1">
-                  Proběhlo
-                </span>
-              )}
             </div>
 
+            {/* Indikace proběhlo přesunutá pod datum (plně neprůhledná) */}
+            {isPast && (
+              <div className="mb-1">
+                <span className="inline-flex items-center text-[10px] font-bold uppercase tracking-wider text-slate-600 bg-white border border-slate-200 px-2 py-0.5 rounded-md shadow-2xs">
+                  Proběhlo
+                </span>
+              </div>
+            )}
+
             {/* Název události */}
-            <h2 className="text-base sm:text-lg md:text-xl font-bold text-white tracking-tight leading-snug group-hover:text-emerald-300 transition-colors">
+            <h2 className="text-base sm:text-lg md:text-xl font-black text-slate-950 tracking-tight leading-snug group-hover:text-emerald-700 transition-colors drop-shadow-2xs">
               {event.title}
             </h2>
+
+            {/* Popis události (pokud je zadán, zobrazí se přímo na kartě na hlavní obrazovce) */}
+            {event.description && event.description.trim() !== '' && (
+              <p className={`mt-1 text-xs sm:text-sm text-slate-600 font-medium leading-relaxed ${
+                isCardExpanded ? '' : 'line-clamp-2'
+              }`}>
+                {event.description.trim()}
+              </p>
+            )}
           </div>
 
           {/* Pravá část: Počet potvrzených účastníků a tlačítko rozbalení / sbalení */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            {/* Počet potvrzených účastníků */}
-            <div className="bg-slate-850/90 rounded-xl px-2.5 sm:px-3 py-1.5 text-right shadow-inner shrink-0">
-              <div className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider">Potvrzeno</div>
-              <div className={`text-xs sm:text-sm font-extrabold flex items-center justify-end ${
-                isPast ? 'text-slate-300' : 'text-emerald-400'
+            {/* Počet potvrzených účastníků - plně neprůhledné bílé pozadí */}
+            <div className="bg-white rounded-xl px-2.5 sm:px-3 py-1.5 text-right shadow-2xs shrink-0 border border-slate-200">
+              <div className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Potvrzeno</div>
+              <div className={`text-xs sm:text-sm font-black flex items-center justify-end ${
+                isPast ? 'text-slate-500' : 'text-emerald-700'
               }`}>
                 <Users className="w-3.5 h-3.5 mr-1" />
                 <span>{yesList.length}</span>
               </div>
             </div>
 
-            {/* Tlačítko rozbalení / sbalení celé karty */}
+            {/* Tlačítko rozbalení / sbalení celé karty - plně neprůhledné bílé pozadí */}
             <button
               type="button"
               onClick={() => setIsCardExpanded(!isCardExpanded)}
-              className="p-2 sm:p-2.5 bg-slate-800 hover:bg-slate-750 active:bg-slate-700 text-slate-200 hover:text-white rounded-xl transition cursor-pointer flex items-center gap-1 shrink-0"
+              className="p-2 sm:p-2.5 bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-700 hover:text-slate-950 rounded-xl transition cursor-pointer flex items-center gap-1 shrink-0 border border-slate-200 shadow-2xs"
               title={isCardExpanded ? 'Sbalit kartu události' : 'Rozbalit všechny podrobnosti'}
               aria-label={isCardExpanded ? 'Sbalit kartu události' : 'Rozbalit kartu události'}
             >
               {isCardExpanded ? (
                 <>
-                  <ChevronUp className="w-4 h-4 text-emerald-400" />
-                  <span className="hidden sm:inline text-xs font-semibold text-slate-300">Sbalit</span>
+                  <ChevronUp className="w-4 h-4 text-emerald-600" />
+                  <span className="hidden sm:inline text-xs font-bold text-slate-700">Sbalit</span>
                 </>
               ) : (
                 <>
-                  <ChevronDown className="w-4 h-4 text-emerald-400" />
-                  <span className="hidden sm:inline text-xs font-semibold text-slate-300">Více</span>
+                  <ChevronDown className="w-4 h-4 text-emerald-600" />
+                  <span className="hidden sm:inline text-xs font-bold text-slate-700">Více</span>
                 </>
               )}
             </button>
@@ -429,31 +462,35 @@ export const EventCard: React.FC<EventCardProps> = ({
 
         {/* ROZŠÍŘENÉ PODROBNOSTI KARTY: Čas, Místo, Kód týmu, Kalendář, Úpravy, Týmová připomenutí */}
         {isCardExpanded && (
-          <div className="space-y-3 pt-2.5 border-t border-slate-700/60 animate-in fade-in duration-150">
+          <div className="space-y-3 pt-2.5 border-t border-slate-150 animate-in fade-in duration-150">
             {/* Druhý řádek: Čas, Kód týmu, Místo a Akční tlačítka kalendáře/editace/smazání */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
               <div className="flex flex-wrap items-center gap-2 text-xs">
-                <div className="flex items-center space-x-1.5 font-semibold text-slate-200">
-                  <Clock className="w-3.5 h-3.5 text-emerald-400" />
+                {/* Čas události - plně neprůhledná pilulka */}
+                <div className="flex items-center space-x-1.5 font-bold text-slate-800 bg-white border border-slate-200 px-2.5 py-1 rounded-lg shadow-2xs">
+                  <Clock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                   <span>{event.time}</span>
                 </div>
                 
+                {/* Tým kód */}
                 {activeTeam && (
-                  <span className="bg-slate-800 text-slate-300 px-2 py-0.5 rounded-md text-[10px] font-bold font-mono">
+                  <span className="bg-white text-slate-700 border border-slate-200 px-2.5 py-1 rounded-lg text-[10px] font-bold font-mono shadow-2xs">
                     #{activeTeam.code} {activeTeam.name}
                   </span>
                 )}
 
+                {/* Uplynulá událost štítek */}
                 {isPast && (
-                  <span className="bg-slate-800 text-slate-300 px-2 py-0.5 rounded-md text-[10px] font-bold flex items-center space-x-1">
+                  <span className="bg-white text-slate-600 border border-slate-200 px-2.5 py-1 rounded-lg text-[10px] font-bold flex items-center space-x-1 shadow-2xs">
                     <Lock className="w-3 h-3 text-slate-400 shrink-0" />
                     <span>Uplynulá událost</span>
                   </span>
                 )}
 
+                {/* Místo konání - plně neprůhledná pilulka */}
                 {event.location && event.location.trim() !== '' && (
-                  <div className="flex items-center space-x-1.5 text-xs text-slate-300">
-                    <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <div className="flex items-center space-x-1.5 text-xs text-slate-700 bg-white border border-slate-200 px-2.5 py-1 rounded-lg shadow-2xs">
+                    <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                     <span>{event.location.trim()}</span>
                   </div>
                 )}
@@ -461,22 +498,22 @@ export const EventCard: React.FC<EventCardProps> = ({
 
               {/* Action Controls: Do kalendáře button, Edit, Delete */}
               <div className="flex items-center space-x-2 shrink-0 relative">
-                {/* Přidat do kalendáře button & dropdown (solid button, no outline) */}
+                {/* Přidat do kalendáře button & dropdown (solid button, non-transparent) */}
                 <div className="relative z-30" ref={calendarMenuRef}>
                   <button
                     type="button"
                     onClick={() => setShowCalendarMenu(!showCalendarMenu)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition cursor-pointer shadow-sm ${
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition cursor-pointer shadow-2xs border ${
                       showCalendarMenu
-                        ? 'bg-emerald-500 text-slate-950 font-black'
-                        : 'bg-slate-800 hover:bg-slate-750 active:bg-slate-700 text-slate-200'
+                        ? 'bg-emerald-600 text-white border-emerald-600 font-black'
+                        : 'bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-800 border-slate-200'
                     }`}
                     title="Přidat událost do osobního kalendáře (Google, Apple, Outlook...)"
                   >
-                    <CalendarPlus className={`w-3.5 h-3.5 ${showCalendarMenu ? 'text-slate-950' : 'text-emerald-400'}`} />
+                    <CalendarPlus className={`w-3.5 h-3.5 ${showCalendarMenu ? 'text-white' : 'text-emerald-600'}`} />
                     <span className="hidden xs:inline sm:inline">Do kalendáře</span>
                     <span className="xs:hidden sm:hidden">Kalendář</span>
-                    <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform duration-200 ${showCalendarMenu ? 'rotate-180 text-slate-950' : ''}`} />
+                    <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${showCalendarMenu ? 'rotate-180 text-white' : 'text-slate-500'}`} />
                   </button>
 
                   {/* Mobile overlay to close on outside touch */}
@@ -489,13 +526,13 @@ export const EventCard: React.FC<EventCardProps> = ({
 
                   {/* Dropdown Menu - positioned left-0 on mobile, right-0 on desktop */}
                   {showCalendarMenu && (
-                    <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-72 sm:w-80 max-w-[calc(100vw-2.5rem)] bg-slate-900 border border-slate-700/90 rounded-2xl shadow-2xl z-50 p-2 text-white animate-in fade-in zoom-in-95 duration-150 backdrop-blur-md">
-                      <div className="px-3 py-2 border-b border-slate-800 mb-1">
-                        <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                          <CalendarPlus className="w-4 h-4 text-emerald-400" />
+                    <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-72 sm:w-80 max-w-[calc(100vw-2.5rem)] bg-white border border-slate-200 rounded-2xl shadow-xl z-50 p-2 text-slate-900 animate-in fade-in zoom-in-95 duration-150">
+                      <div className="px-3 py-2 border-b border-slate-100 mb-1">
+                        <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                          <CalendarPlus className="w-4 h-4 text-emerald-600" />
                           <span>Přidat do osobního kalendáře</span>
                         </div>
-                        <p className="text-[11px] text-slate-400 mt-0.5">
+                        <p className="text-[11px] text-slate-500 mt-0.5">
                           {event.title} • {event.time} ({formatCzechDate(event.date)})
                         </p>
                       </div>
@@ -505,21 +542,21 @@ export const EventCard: React.FC<EventCardProps> = ({
                         <button
                           type="button"
                           onClick={handleDownloadIcs}
-                          className="w-full text-left p-2.5 rounded-xl hover:bg-slate-800/90 active:bg-slate-700 transition flex items-start space-x-3 cursor-pointer group"
+                          className="w-full text-left p-2.5 rounded-xl hover:bg-slate-50 active:bg-slate-100 transition flex items-start space-x-3 cursor-pointer group"
                         >
-                          <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+                          <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
                             {icsDownloaded ? (
-                              <Check className="w-4 h-4 text-emerald-400 stroke-[3]" />
+                              <Check className="w-4 h-4 text-emerald-600 stroke-[3]" />
                             ) : (
                               <Smartphone className="w-4 h-4" />
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="text-xs font-bold text-white flex items-center justify-between">
+                            <div className="text-xs font-bold text-slate-900 flex items-center justify-between">
                               <span>{icsDownloaded ? 'Uloženo do zařízení!' : 'Mobil / Apple / Outlook (.ics)'}</span>
-                              <Download className={`w-3.5 h-3.5 ${icsDownloaded ? 'text-emerald-400' : 'text-slate-400 group-hover:text-emerald-400'}`} />
+                              <Download className={`w-3.5 h-3.5 ${icsDownloaded ? 'text-emerald-600' : 'text-slate-400 group-hover:text-emerald-600'}`} />
                             </div>
-                            <p className="text-[10px] text-slate-400 leading-tight mt-0.5">
+                            <p className="text-[10px] text-slate-500 leading-tight mt-0.5">
                               {icsDownloaded ? 'Soubor byl úspěšně stažen' : 'Pro iPhone, iPad, Mac a Outlook s 2h připomenutím'}
                             </p>
                           </div>
@@ -531,17 +568,17 @@ export const EventCard: React.FC<EventCardProps> = ({
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={() => setShowCalendarMenu(false)}
-                          className="w-full text-left p-2.5 rounded-xl hover:bg-slate-800/90 active:bg-slate-700 transition flex items-start space-x-3 cursor-pointer group"
+                          className="w-full text-left p-2.5 rounded-xl hover:bg-slate-50 active:bg-slate-100 transition flex items-start space-x-3 cursor-pointer group"
                         >
-                          <div className="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+                          <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 border border-blue-200 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
                             <Calendar className="w-4 h-4" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="text-xs font-bold text-white flex items-center justify-between">
+                            <div className="text-xs font-bold text-slate-900 flex items-center justify-between">
                               <span>Google Kalendář</span>
-                              <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-400" />
+                              <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600" />
                             </div>
-                            <p className="text-[10px] text-slate-400 leading-tight mt-0.5">
+                            <p className="text-[10px] text-slate-500 leading-tight mt-0.5">
                               Otevřít a uložit přímo v Google Kalendáři
                             </p>
                           </div>
@@ -553,17 +590,17 @@ export const EventCard: React.FC<EventCardProps> = ({
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={() => setShowCalendarMenu(false)}
-                          className="w-full text-left p-2.5 rounded-xl hover:bg-slate-800/90 active:bg-slate-700 transition flex items-start space-x-3 cursor-pointer group"
+                          className="w-full text-left p-2.5 rounded-xl hover:bg-slate-50 active:bg-slate-100 transition flex items-start space-x-3 cursor-pointer group"
                         >
-                          <div className="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 border border-sky-500/30 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+                          <div className="w-8 h-8 rounded-lg bg-sky-50 text-sky-600 border border-sky-200 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
                             <Clock className="w-4 h-4" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="text-xs font-bold text-white flex items-center justify-between">
+                            <div className="text-xs font-bold text-slate-900 flex items-center justify-between">
                               <span>Outlook.com / Microsoft 365</span>
-                              <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-sky-400" />
+                              <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-sky-600" />
                             </div>
-                            <p className="text-[10px] text-slate-400 leading-tight mt-0.5">
+                            <p className="text-[10px] text-slate-500 leading-tight mt-0.5">
                               Uložit do webového kalendáře Microsoft
                             </p>
                           </div>
@@ -575,17 +612,17 @@ export const EventCard: React.FC<EventCardProps> = ({
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={() => setShowCalendarMenu(false)}
-                          className="w-full text-left p-2.5 rounded-xl hover:bg-slate-800/90 active:bg-slate-700 transition flex items-start space-x-3 cursor-pointer group"
+                          className="w-full text-left p-2.5 rounded-xl hover:bg-slate-50 active:bg-slate-100 transition flex items-start space-x-3 cursor-pointer group"
                         >
-                          <div className="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+                          <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 border border-purple-200 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
                             <CalendarPlus className="w-4 h-4" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="text-xs font-bold text-white flex items-center justify-between">
+                            <div className="text-xs font-bold text-slate-900 flex items-center justify-between">
                               <span>Yahoo Kalendář</span>
-                              <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-purple-400" />
+                              <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-purple-600" />
                             </div>
-                            <p className="text-[10px] text-slate-400 leading-tight mt-0.5">
+                            <p className="text-[10px] text-slate-500 leading-tight mt-0.5">
                               Uložit do kalendáře Yahoo
                             </p>
                           </div>
@@ -595,12 +632,12 @@ export const EventCard: React.FC<EventCardProps> = ({
                   )}
                 </div>
 
-                {/* Edit button (solid button, no outline) */}
+                {/* Edit button (solid non-transparent button) */}
                 {isCreatorOrAdmin && onEditEvent && !isPast && (
                   <button
                     type="button"
                     onClick={() => onEditEvent(event)}
-                    className="p-2 text-slate-300 hover:text-emerald-400 bg-slate-800 hover:bg-slate-750 active:bg-slate-700 rounded-xl transition cursor-pointer"
+                    className="p-2 text-slate-700 hover:text-emerald-700 bg-white hover:bg-slate-50 active:bg-slate-100 rounded-xl transition cursor-pointer border border-slate-200 shadow-2xs"
                     title="Upravit událost"
                     aria-label="Upravit událost"
                   >
@@ -608,12 +645,12 @@ export const EventCard: React.FC<EventCardProps> = ({
                   </button>
                 )}
 
-                {/* Delete button (solid button, no outline) */}
+                {/* Delete button (solid non-transparent button) */}
                 {isCreatorOrAdmin && onDeleteEvent && (
                   <button
                     type="button"
                     onClick={() => onDeleteEvent(event.id)}
-                    className="p-2 text-slate-300 hover:text-rose-400 bg-slate-800 hover:bg-slate-750 active:bg-slate-700 rounded-xl transition cursor-pointer"
+                    className="p-2 text-slate-600 hover:text-rose-600 bg-white hover:bg-rose-50 active:bg-rose-100 rounded-xl transition cursor-pointer border border-slate-200 shadow-2xs"
                     title="Zrušit a smazat událost"
                     aria-label="Zrušit a smazat událost"
                   >
@@ -623,35 +660,39 @@ export const EventCard: React.FC<EventCardProps> = ({
               </div>
             </div>
 
-            {/* TÝMOVÁ PŘIPOMENUTÍ: V kolapsovaném panelu, výchozí stav kolapsovaný */}
+            {/* TÝMOVÁ PŘIPOMENUTÍ: V kolapsovaném panelu, plně neprůhledné pozadí */}
             {!isPast && (
-              <div className="bg-slate-850/80 rounded-xl p-2.5 text-xs">
+              <div className="bg-white rounded-xl p-2.5 text-xs border border-slate-200 shadow-2xs">
                 <button
                   type="button"
                   onClick={() => setIsRemindersPaneOpen(!isRemindersPaneOpen)}
                   className="w-full flex items-center justify-between text-left cursor-pointer group py-0.5"
                 >
-                  <div className="flex items-center space-x-2 text-slate-200 font-semibold">
-                    <Bell className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <div className="flex items-center space-x-2 text-slate-800 font-bold">
+                    <Bell className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                     <span>Týmová připomenutí</span>
-                    <span className="bg-slate-750 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-md">
-                      {eventReminders.length > 0 ? `${eventReminders.length} nastaveno` : 'vypnuto'}
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border shadow-2xs ${
+                      eventReminders.length > 0
+                        ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                        : 'bg-white text-slate-700 border-slate-200'
+                    }`}>
+                      {eventReminders.length}
                     </span>
                   </div>
-                  <div className="flex items-center space-x-1.5 text-[11px] text-slate-400 group-hover:text-emerald-400 transition">
+                  <div className="flex items-center space-x-1.5 text-[11px] text-slate-500 group-hover:text-emerald-700 transition font-semibold">
                     <span>{isRemindersPaneOpen ? 'Skrýt nastavení' : 'Zobrazit nastavení'}</span>
                     {isRemindersPaneOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                   </div>
                 </button>
 
                 {isRemindersPaneOpen && (
-                  <div className="mt-2.5 pt-2.5 border-t border-slate-700/60 space-y-2.5 animate-in fade-in">
+                  <div className="mt-2.5 pt-2.5 border-t border-slate-200 space-y-2.5 animate-in fade-in">
                     <div className="flex flex-wrap items-center gap-1.5">
                       {eventReminders.length > 0 ? (
                         eventReminders.map((h) => (
                           <span
                             key={h}
-                            className="bg-emerald-950/90 text-emerald-300 px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1.5 shadow-xs"
+                            className="bg-emerald-50 text-emerald-900 border border-emerald-200 px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1.5 shadow-2xs"
                           >
                             <span>{formatReminderLabel(h)}</span>
                             {isCreatorOrAdmin && (
@@ -661,7 +702,7 @@ export const EventCard: React.FC<EventCardProps> = ({
                                   e.stopPropagation();
                                   handleToggleReminder(h);
                                 }}
-                                className="hover:text-rose-300 cursor-pointer p-0.5 rounded"
+                                className="hover:text-rose-600 cursor-pointer p-0.5 rounded"
                                 title="Odebrat toto připomenutí"
                               >
                                 <X className="w-3 h-3" />
@@ -670,14 +711,14 @@ export const EventCard: React.FC<EventCardProps> = ({
                           </span>
                         ))
                       ) : (
-                        <span className="text-slate-400 italic text-[11px]">Žádné týmové připomenutí není nastaveno.</span>
+                        <span className="text-slate-500 italic text-[11px]">Žádné týmové připomenutí není nastaveno.</span>
                       )}
                     </div>
 
-                    {/* Quick add chips for creator/admin (solid buttons, no outline) */}
+                    {/* Quick add chips for creator/admin (solid buttons, non-transparent) */}
                     {isCreatorOrAdmin && (
-                      <div className="pt-2 border-t border-slate-700/50 flex flex-wrap items-center gap-1.5">
-                        <span className="text-[10px] text-slate-400 uppercase font-bold mr-1">Rychlá volba:</span>
+                      <div className="pt-2 border-t border-slate-200 flex flex-wrap items-center gap-1.5">
+                        <span className="text-[10px] text-slate-500 uppercase font-bold mr-1">Rychlá volba:</span>
                         {[
                           { hours: 48, label: '48h předem' },
                           { hours: 24, label: '24h předem' },
@@ -692,10 +733,10 @@ export const EventCard: React.FC<EventCardProps> = ({
                               key={opt.hours}
                               type="button"
                               onClick={() => handleToggleReminder(opt.hours)}
-                              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
+                              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer border shadow-2xs ${
                                 isActive
-                                  ? 'bg-emerald-500 text-slate-950 shadow-sm'
-                                  : 'bg-slate-750 hover:bg-slate-700 active:bg-slate-650 text-slate-200'
+                                  ? 'bg-emerald-600 text-white border-emerald-600'
+                                  : 'bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-700 border-slate-200'
                               }`}
                             >
                               {isActive ? '✓ ' : '+ '}
@@ -712,30 +753,30 @@ export const EventCard: React.FC<EventCardProps> = ({
           </div>
         )}
 
-        {/* FIRST CLASS CITIZENS: Velká taktilní tlačítka docházky (JDU / MOŽNÁ / NEJDU) bez rámečků */}
-        <div className="pt-3 border-t border-slate-700/60">
+        {/* FIRST CLASS CITIZENS: Velká taktilní tlačítka docházky (JDU / MOŽNÁ / NEJDU) ve světlém Clean Athletic stylu - 100% neprůhledná */}
+        <div className="pt-3 border-t border-slate-150">
           <div className="grid grid-cols-3 gap-2 sm:gap-3">
             {/* JDU Button */}
             <button
               onClick={() => handleSetAttendance('YES')}
               disabled={isPast}
               title={isPast ? 'Událost již proběhla – účast nelze měnit' : 'Zúčastním se této události'}
-              className={`min-h-[52px] sm:min-h-[56px] py-2.5 sm:py-3 px-2 sm:px-4 rounded-xl font-black text-xs sm:text-sm flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 transition cursor-pointer select-none ${
+              className={`min-h-[52px] sm:min-h-[56px] py-2.5 sm:py-3 px-2 sm:px-4 rounded-xl font-black text-xs sm:text-sm flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 transition cursor-pointer select-none border shadow-2xs ${
                 isPast ? 'cursor-not-allowed opacity-60' : ''
               } ${
                 currentUserAttendance === 'YES'
                   ? isPast
-                    ? 'bg-emerald-800 text-slate-200'
-                    : 'bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 shadow-lg shadow-emerald-500/35 scale-[1.02]'
+                    ? 'bg-emerald-800 text-white border-emerald-800'
+                    : 'bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white border-emerald-600 shadow-md shadow-emerald-600/30 scale-[1.02]'
                   : isPast
-                    ? 'bg-slate-800/60 text-slate-500'
-                    : 'bg-slate-800 hover:bg-slate-750 active:bg-slate-700 text-emerald-400'
+                    ? 'bg-slate-100 text-slate-400 border-slate-200'
+                    : 'bg-white hover:bg-emerald-50 active:bg-emerald-100 text-emerald-800 border-emerald-300'
               }`}
             >
               <CheckCircle2 className="w-5 h-5 shrink-0 stroke-[2.5]" />
               <span className="tracking-wide">JDU</span>
               <span className={`text-[10px] sm:text-xs font-mono font-bold px-1.5 py-0.5 rounded-md ${
-                currentUserAttendance === 'YES' ? 'bg-slate-950/20 text-slate-950' : 'bg-slate-900/60 text-emerald-300'
+                currentUserAttendance === 'YES' ? 'bg-emerald-700 text-white' : 'bg-emerald-50 text-emerald-900 border border-emerald-200'
               }`}>
                 {yesList.length}
               </span>
@@ -746,22 +787,22 @@ export const EventCard: React.FC<EventCardProps> = ({
               onClick={() => handleSetAttendance('MAYBE')}
               disabled={isPast}
               title={isPast ? 'Událost již proběhla – účast nelze měnit' : 'Možná se zúčastním'}
-              className={`min-h-[52px] sm:min-h-[56px] py-2.5 sm:py-3 px-2 sm:px-4 rounded-xl font-black text-xs sm:text-sm flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 transition cursor-pointer select-none ${
+              className={`min-h-[52px] sm:min-h-[56px] py-2.5 sm:py-3 px-2 sm:px-4 rounded-xl font-black text-xs sm:text-sm flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 transition cursor-pointer select-none border shadow-2xs ${
                 isPast ? 'cursor-not-allowed opacity-60' : ''
               } ${
                 currentUserAttendance === 'MAYBE'
                   ? isPast
-                    ? 'bg-amber-800 text-slate-200'
-                    : 'bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-slate-950 shadow-lg shadow-amber-500/35 scale-[1.02]'
+                    ? 'bg-amber-600 text-slate-950 border-amber-600'
+                    : 'bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-slate-950 border-amber-400 shadow-md shadow-amber-400/30 scale-[1.02]'
                   : isPast
-                    ? 'bg-slate-800/60 text-slate-500'
-                    : 'bg-slate-800 hover:bg-slate-750 active:bg-slate-700 text-amber-400'
+                    ? 'bg-slate-100 text-slate-400 border-slate-200'
+                    : 'bg-white hover:bg-amber-50 active:bg-amber-100 text-amber-900 border-amber-300'
               }`}
             >
               <HelpCircle className="w-5 h-5 shrink-0 stroke-[2.5]" />
               <span className="tracking-wide">MOŽNÁ</span>
               <span className={`text-[10px] sm:text-xs font-mono font-bold px-1.5 py-0.5 rounded-md ${
-                currentUserAttendance === 'MAYBE' ? 'bg-slate-950/20 text-slate-950' : 'bg-slate-900/60 text-amber-300'
+                currentUserAttendance === 'MAYBE' ? 'bg-amber-500 text-slate-950' : 'bg-amber-50 text-amber-900 border border-amber-200'
               }`}>
                 {maybeList.length}
               </span>
@@ -772,22 +813,22 @@ export const EventCard: React.FC<EventCardProps> = ({
               onClick={() => handleSetAttendance('NO')}
               disabled={isPast}
               title={isPast ? 'Událost již proběhla – účast nelze měnit' : 'Nezúčastním se této události'}
-              className={`min-h-[52px] sm:min-h-[56px] py-2.5 sm:py-3 px-2 sm:px-4 rounded-xl font-black text-xs sm:text-sm flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 transition cursor-pointer select-none ${
+              className={`min-h-[52px] sm:min-h-[56px] py-2.5 sm:py-3 px-2 sm:px-4 rounded-xl font-black text-xs sm:text-sm flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 transition cursor-pointer select-none border shadow-2xs ${
                 isPast ? 'cursor-not-allowed opacity-60' : ''
               } ${
                 currentUserAttendance === 'NO'
                   ? isPast
-                    ? 'bg-rose-900 text-slate-200'
-                    : 'bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white shadow-lg shadow-rose-600/35 scale-[1.02]'
+                    ? 'bg-rose-800 text-white border-rose-800'
+                    : 'bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white border-rose-600 shadow-md shadow-rose-600/30 scale-[1.02]'
                   : isPast
-                    ? 'bg-slate-800/60 text-slate-500'
-                    : 'bg-slate-800 hover:bg-slate-750 active:bg-slate-700 text-rose-400'
+                    ? 'bg-slate-100 text-slate-400 border-slate-200'
+                    : 'bg-white hover:bg-rose-50 active:bg-rose-100 text-rose-900 border-rose-300'
               }`}
             >
               <XCircle className="w-5 h-5 shrink-0 stroke-[2.5]" />
               <span className="tracking-wide">NEJDU</span>
               <span className={`text-[10px] sm:text-xs font-mono font-bold px-1.5 py-0.5 rounded-md ${
-                currentUserAttendance === 'NO' ? 'bg-black/25 text-white' : 'bg-slate-900/60 text-rose-300'
+                currentUserAttendance === 'NO' ? 'bg-rose-700 text-white' : 'bg-rose-50 text-rose-900 border border-rose-200'
               }`}>
                 {noList.length}
               </span>
@@ -800,34 +841,34 @@ export const EventCard: React.FC<EventCardProps> = ({
       {/* Účast a diskuze: zobrazeno pouze v rozbaleném stavu */}
       {isCardExpanded && (
         <>
-          <div className="p-3.5 sm:p-4 space-y-2 bg-slate-900 border-t border-slate-800 animate-in fade-in duration-150">
+          <div className="p-3.5 sm:p-4 space-y-2 bg-slate-50 border-t border-slate-200 animate-in fade-in duration-150">
         
         {/* Sekce 1: Zúčastní se (Zelená) */}
-        <div className="rounded-xl overflow-hidden bg-slate-950/80 shadow-xs">
+        <div className="rounded-xl overflow-hidden bg-white border border-slate-200/90 shadow-2xs">
           <button
             type="button"
             onClick={() => setIsYesExpanded(!isYesExpanded)}
-            className="w-full px-3.5 py-2.5 flex items-center justify-between text-left bg-slate-800/80 hover:bg-slate-750 transition cursor-pointer"
+            className="w-full px-3.5 py-2.5 flex items-center justify-between text-left bg-white hover:bg-slate-50 transition cursor-pointer"
           >
             <div className="flex items-center space-x-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span className="text-xs sm:text-sm font-bold text-white">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span className="text-xs sm:text-sm font-bold text-slate-900">
                 Zúčastní se
               </span>
               <span className="bg-emerald-500 text-slate-950 text-[11px] font-black px-2 py-0.5 rounded-full">
                 {yesList.length}
               </span>
             </div>
-            <div className="flex items-center text-xs font-semibold text-emerald-400">
+            <div className="flex items-center text-xs font-semibold text-emerald-700">
               <span className="mr-1">{isYesExpanded ? 'Skrýt' : 'Zobrazit'}</span>
               {isYesExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </div>
           </button>
 
           {isYesExpanded && (
-            <div className="px-3.5 pb-3 pt-2 bg-slate-950/70 border-t border-slate-850">
+            <div className="px-3.5 pb-3 pt-2 bg-slate-50/70 border-t border-slate-150">
               {yesList.length === 0 ? (
-                <p className="text-xs text-slate-400 italic py-1">Zatím nikdo nenahlásil účast.</p>
+                <p className="text-xs text-slate-500 italic py-1">Zatím nikdo nenahlásil účast.</p>
               ) : (
                 <div className="flex flex-wrap items-center gap-1.5 pt-1">
                   {yesList.map((item) => {
@@ -849,31 +890,31 @@ export const EventCard: React.FC<EventCardProps> = ({
         </div>
 
         {/* Sekce 2: Možná (Oranžová/žlutá) */}
-        <div className="rounded-xl overflow-hidden bg-slate-950/80 shadow-xs">
+        <div className="rounded-xl overflow-hidden bg-white border border-slate-200/90 shadow-2xs">
           <button
             type="button"
             onClick={() => setIsMaybeExpanded(!isMaybeExpanded)}
-            className="w-full px-3.5 py-2.5 flex items-center justify-between text-left bg-slate-800/80 hover:bg-slate-750 transition cursor-pointer"
+            className="w-full px-3.5 py-2.5 flex items-center justify-between text-left bg-white hover:bg-slate-50 transition cursor-pointer"
           >
             <div className="flex items-center space-x-2">
-              <HelpCircle className="w-4 h-4 text-amber-400 shrink-0" />
-              <span className="text-xs sm:text-sm font-bold text-white">
+              <HelpCircle className="w-4 h-4 text-amber-600 shrink-0" />
+              <span className="text-xs sm:text-sm font-bold text-slate-900">
                 Možná se zúčastní
               </span>
-              <span className="bg-amber-500 text-slate-950 text-[11px] font-black px-2 py-0.5 rounded-full">
+              <span className="bg-amber-400 text-slate-950 text-[11px] font-black px-2 py-0.5 rounded-full">
                 {maybeList.length}
               </span>
             </div>
-            <div className="flex items-center text-xs font-semibold text-amber-400">
+            <div className="flex items-center text-xs font-semibold text-amber-700">
               <span className="mr-1">{isMaybeExpanded ? 'Skrýt' : 'Zobrazit'}</span>
               {isMaybeExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </div>
           </button>
 
           {isMaybeExpanded && (
-            <div className="px-3.5 pb-3 pt-2 bg-slate-950/70 border-t border-slate-850">
+            <div className="px-3.5 pb-3 pt-2 bg-slate-50/70 border-t border-slate-150">
               {maybeList.length === 0 ? (
-                <p className="text-xs text-slate-400 italic py-1">Zatím nikdo.</p>
+                <p className="text-xs text-slate-500 italic py-1">Zatím nikdo.</p>
               ) : (
                 <div className="flex flex-wrap items-center gap-1.5 pt-1">
                   {maybeList.map((item) => {
@@ -895,31 +936,31 @@ export const EventCard: React.FC<EventCardProps> = ({
         </div>
 
         {/* Sekce 3: Nezúčastní se (Červená) */}
-        <div className="rounded-xl overflow-hidden bg-slate-950/80 shadow-xs">
+        <div className="rounded-xl overflow-hidden bg-white border border-slate-200/90 shadow-2xs">
           <button
             type="button"
             onClick={() => setIsNoExpanded(!isNoExpanded)}
-            className="w-full px-3.5 py-2.5 flex items-center justify-between text-left bg-slate-800/80 hover:bg-slate-750 transition cursor-pointer"
+            className="w-full px-3.5 py-2.5 flex items-center justify-between text-left bg-white hover:bg-slate-50 transition cursor-pointer"
           >
             <div className="flex items-center space-x-2">
-              <XCircle className="w-4 h-4 text-rose-400 shrink-0" />
-              <span className="text-xs sm:text-sm font-bold text-white">
+              <XCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span className="text-xs sm:text-sm font-bold text-slate-900">
                 Nezúčastní se
               </span>
-              <span className="bg-rose-600 text-white text-[11px] font-black px-2 py-0.5 rounded-full">
+              <span className="bg-rose-500 text-white text-[11px] font-black px-2 py-0.5 rounded-full">
                 {noList.length}
               </span>
             </div>
-            <div className="flex items-center text-xs font-semibold text-rose-400">
+            <div className="flex items-center text-xs font-semibold text-rose-700">
               <span className="mr-1">{isNoExpanded ? 'Skrýt' : 'Zobrazit'}</span>
               {isNoExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </div>
           </button>
 
           {isNoExpanded && (
-            <div className="px-3.5 pb-3 pt-2 bg-slate-950/70 border-t border-slate-850">
+            <div className="px-3.5 pb-3 pt-2 bg-slate-50/70 border-t border-slate-150">
               {noList.length === 0 ? (
-                <p className="text-xs text-slate-400 italic py-1">Zatím nikdo.</p>
+                <p className="text-xs text-slate-500 italic py-1">Zatím nikdo.</p>
               ) : (
                 <div className="flex flex-wrap items-center gap-1.5 pt-1">
                   {noList.map((item) => {
@@ -941,37 +982,37 @@ export const EventCard: React.FC<EventCardProps> = ({
         </div>
 
         {/* Sekce 4: Nevyjádřili se (Šedá) */}
-        <div className="rounded-xl overflow-hidden bg-slate-950/80 shadow-xs">
+        <div className="rounded-xl overflow-hidden bg-white border border-slate-200/90 shadow-2xs">
           <button
             type="button"
             onClick={() => setIsUnrespondedExpanded(!isUnrespondedExpanded)}
-            className="w-full px-3.5 py-2.5 flex items-center justify-between text-left bg-slate-800/80 hover:bg-slate-750 transition cursor-pointer"
+            className="w-full px-3.5 py-2.5 flex items-center justify-between text-left bg-white hover:bg-slate-50 transition cursor-pointer"
           >
             <div className="flex items-center space-x-2">
-              <Clock className="w-4 h-4 text-slate-400 shrink-0" />
-              <span className="text-xs sm:text-sm font-bold text-slate-200">
+              <Clock className="w-4 h-4 text-slate-500 shrink-0" />
+              <span className="text-xs sm:text-sm font-bold text-slate-700">
                 Nevyjádřili se
               </span>
-              <span className="bg-slate-700 text-slate-200 text-[11px] font-bold px-2 py-0.5 rounded-full">
+              <span className="bg-slate-100 text-slate-700 border border-slate-200 text-[11px] font-bold px-2 py-0.5 rounded-full">
                 {unrespondedList.length}
               </span>
             </div>
-            <div className="flex items-center text-xs font-semibold text-slate-400">
+            <div className="flex items-center text-xs font-semibold text-slate-600">
               <span className="mr-1">{isUnrespondedExpanded ? 'Skrýt' : 'Zobrazit'}</span>
               {isUnrespondedExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </div>
           </button>
 
           {isUnrespondedExpanded && (
-            <div className="px-3.5 pb-3 pt-2 bg-slate-950/70 border-t border-slate-850">
+            <div className="px-3.5 pb-3 pt-2 bg-slate-50/70 border-t border-slate-150">
               {unrespondedList.length === 0 ? (
-                <p className="text-xs text-slate-400 italic py-1">Všichni členové týmu se již vyjádřili.</p>
+                <p className="text-xs text-slate-500 italic py-1">Všichni členové týmu se již vyjádřili.</p>
               ) : (
                 <div className="flex flex-wrap items-center gap-1.5 pt-1">
                   {unrespondedList.map((item) => (
                     <div
                       key={item.email}
-                      className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-slate-200 shadow-xs"
+                      className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200 shadow-2xs"
                       title={item.email}
                     >
                       <span className="truncate max-w-[180px]">{item.displayName}</span>
@@ -985,27 +1026,27 @@ export const EventCard: React.FC<EventCardProps> = ({
 
       </div>
 
-      {/* Realtime Event Chat / Diskuze k události v Dark Arena Pro stylu */}
-      <div className="p-4 sm:p-5 bg-slate-950/80 border-t border-slate-800">
+      {/* Realtime Event Chat / Diskuze k události v Clean Athletic stylu */}
+      <div className="p-4 sm:p-5 bg-white border-t border-slate-200">
         <button
           onClick={() => {
             setHasUserToggledChat(true);
             setIsChatExpanded(!isChatExpanded);
           }}
-          className="w-full flex items-center justify-between text-left focus:outline-none group mb-2 cursor-pointer p-2 rounded-xl bg-slate-850/80 hover:bg-slate-800 transition"
+          className="w-full flex items-center justify-between text-left focus:outline-none group mb-2 cursor-pointer p-2 rounded-xl bg-slate-50 hover:bg-slate-100 transition border border-slate-200/80"
         >
           <div className="flex items-center space-x-2">
-            <MessageSquare className={`w-4 h-4 ${messages.length > 0 ? 'text-emerald-400' : 'text-slate-400'}`} />
-            <h3 className="font-bold text-sm text-white flex items-center gap-1.5">
+            <MessageSquare className={`w-4 h-4 ${messages.length > 0 ? 'text-emerald-600' : 'text-slate-500'}`} />
+            <h3 className="font-bold text-sm text-slate-900 flex items-center gap-1.5">
               <span>Diskuze k události</span>
               <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                messages.length > 0 ? 'bg-emerald-500 text-slate-950' : 'bg-slate-750 text-slate-400'
+                messages.length > 0 ? 'bg-emerald-500 text-slate-950' : 'bg-slate-200 text-slate-600'
               }`}>
                 {messages.length}
               </span>
             </h3>
           </div>
-          <div className="text-xs text-slate-400 flex items-center group-hover:text-white transition">
+          <div className="text-xs text-slate-500 flex items-center group-hover:text-slate-900 transition">
             <span>{isChatExpanded ? 'Skrýt diskuzi' : messages.length === 0 ? 'Otevřít diskuzi' : 'Zobrazit diskuzi'}</span>
             {isChatExpanded ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />}
           </div>
@@ -1015,7 +1056,7 @@ export const EventCard: React.FC<EventCardProps> = ({
           <div className="mt-3 space-y-3">
             
             {/* Messages box */}
-            <div className="bg-slate-900 rounded-xl p-3 sm:p-4 max-h-64 overflow-y-auto space-y-3 shadow-inner">
+            <div className="bg-slate-50 rounded-xl p-3 sm:p-4 max-h-64 overflow-y-auto space-y-3 border border-slate-200 shadow-2xs">
               {messages.length === 0 ? (
                 <div className="text-center py-6 text-slate-400 text-xs italic">
                   Zatím žádné zprávy v diskuzi. Buďte první a napište zprávu týmu!
@@ -1029,16 +1070,16 @@ export const EventCard: React.FC<EventCardProps> = ({
                       key={msg.id}
                       className={`flex flex-col ${isMine ? 'items-end' : 'items-start'}`}
                     >
-                      <div className="flex items-center space-x-1.5 text-[10px] text-slate-400 mb-0.5 px-1">
-                        <span className="font-bold text-slate-200">{displayName}</span>
+                      <div className="flex items-center space-x-1.5 text-[10px] text-slate-500 mb-0.5 px-1">
+                        <span className="font-bold text-slate-700">{displayName}</span>
                         <span>•</span>
                         <span>{formatMessageTime(msg.timestamp)}</span>
                       </div>
                       <div
                         className={`px-3.5 py-2 rounded-2xl text-xs max-w-[85%] leading-relaxed ${
                           isMine
-                            ? 'bg-emerald-600 text-white rounded-br-none shadow-sm'
-                            : 'bg-slate-800 text-slate-100 rounded-bl-none'
+                            ? 'bg-emerald-600 text-white rounded-br-none shadow-xs font-medium'
+                            : 'bg-white text-slate-850 rounded-bl-none border border-slate-200 shadow-2xs font-normal'
                         }`}
                       >
                         {msg.text}
@@ -1052,7 +1093,7 @@ export const EventCard: React.FC<EventCardProps> = ({
 
             {/* Input Form or Locked Message */}
             {isPast ? (
-              <div className="p-3 bg-slate-850 rounded-xl text-xs text-slate-400 text-center flex items-center justify-center space-x-2">
+              <div className="p-3 bg-slate-100 rounded-xl text-xs text-slate-500 text-center flex items-center justify-center space-x-2 border border-slate-200">
                 <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 <span>Diskuze k této události je uzavřena, protože událost již proběhla.</span>
               </div>
@@ -1063,12 +1104,12 @@ export const EventCard: React.FC<EventCardProps> = ({
                   placeholder="Napište zprávu k události..."
                   value={newMessageText}
                   onChange={(e) => setNewMessageText(e.target.value)}
-                  className="flex-1 min-w-0 px-3 sm:px-3.5 py-2 sm:py-2.5 bg-slate-800 text-white placeholder-slate-400 rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500 shadow-sm outline-none"
+                  className="flex-1 min-w-0 px-3 sm:px-3.5 py-2 sm:py-2.5 bg-slate-50 text-slate-900 placeholder-slate-400 rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500 border border-slate-200 outline-none"
                 />
                 <button
                   type="submit"
                   disabled={sendingMsg || !newMessageText.trim()}
-                  className="px-3 sm:px-4 py-2 sm:py-2.5 shrink-0 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 font-bold rounded-xl shadow-md text-xs flex items-center justify-center gap-1 transition disabled:opacity-50 cursor-pointer"
+                  className="px-3 sm:px-4 py-2 sm:py-2.5 shrink-0 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 font-bold rounded-xl shadow-xs text-xs flex items-center justify-center gap-1 transition disabled:opacity-50 cursor-pointer"
                 >
                   <span>Odeslat</span>
                   <Send className="w-3.5 h-3.5 shrink-0" />

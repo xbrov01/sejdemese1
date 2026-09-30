@@ -208,23 +208,23 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-      <div className="bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full text-slate-100 flex flex-col max-h-[90vh] my-auto overflow-hidden">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full text-slate-900 border border-slate-200 flex flex-col max-h-[90vh] my-auto overflow-hidden">
         
         {/* Header - Fixed at Top */}
-        <div className="bg-slate-950 p-4 sm:p-5 text-white shrink-0 relative flex items-center justify-between border-b border-slate-800">
+        <div className="bg-white p-4 sm:p-5 text-slate-900 shrink-0 relative flex items-center justify-between border-b border-slate-150">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center font-black text-lg sm:text-xl text-slate-950 shadow-lg shadow-emerald-500/20 shrink-0">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center font-black text-lg sm:text-xl shadow-xs shrink-0">
               {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-bold tracking-tight">Můj profil & Notifikace</h2>
+              <h2 className="text-base sm:text-lg font-black text-slate-950 tracking-tight">Můj profil & Notifikace</h2>
               <div className="flex items-center space-x-2 mt-0.5">
-                <span className="text-[11px] sm:text-xs text-slate-400 flex items-center truncate max-w-[180px] sm:max-w-none">
+                <span className="text-[11px] sm:text-xs text-slate-500 flex items-center truncate max-w-[180px] sm:max-w-none">
                   <Mail className="w-3 h-3 mr-1 text-slate-400 shrink-0" />
                   <span className="truncate">{currentUser.email}</span>
                 </span>
-                <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-slate-800 text-emerald-400 shrink-0">
+                <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 shrink-0">
                   {currentUser.role === 'admin' ? 'Správce' : 'Člen'}
                 </span>
               </div>
@@ -233,39 +233,39 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
           <button
             onClick={handleCancelModal}
-            className="p-2 bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white rounded-xl transition cursor-pointer"
+            className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 rounded-xl transition cursor-pointer border border-slate-200"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Scrollable Form Body */}
-        <form id="user-profile-form" onSubmit={handleSave} className="p-4 sm:p-6 space-y-5 overflow-y-auto flex-1 bg-slate-900">
+        <form id="user-profile-form" onSubmit={handleSave} className="p-4 sm:p-6 space-y-5 overflow-y-auto flex-1 bg-white">
           {errorMsg && (
-            <div className="p-3 bg-rose-950/80 text-rose-300 text-xs rounded-xl font-medium">
+            <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs rounded-xl font-medium">
               {errorMsg}
             </div>
           )}
 
           {successMsg && (
-            <div className="p-3 bg-emerald-950/80 text-emerald-300 text-xs rounded-xl flex items-center font-medium">
-              <Check className="w-4 h-4 text-emerald-400 mr-2 shrink-0" />
+            <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl flex items-center font-medium">
+              <Check className="w-4 h-4 text-emerald-600 mr-2 shrink-0" />
               <span>{successMsg}</span>
             </div>
           )}
 
           {/* Section 1: E-mail (Uživatelské jméno) */}
           <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
               Uživatelské jméno (E-mail)
             </label>
             <div className="relative">
-              <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+              <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 disabled
                 value={currentUser.email}
-                className="w-full pl-10 pr-4 py-2 bg-slate-950 rounded-xl text-slate-400 text-xs sm:text-sm font-mono cursor-not-allowed outline-none"
+                className="w-full pl-10 pr-4 py-2 bg-slate-100 rounded-xl border border-slate-200 text-slate-600 text-xs sm:text-sm font-mono cursor-not-allowed outline-none"
               />
             </div>
             <p className="text-[11px] text-slate-500 mt-1">E-mail slouží jako trvalý unikátní identifikátor účtu.</p>
@@ -273,8 +273,8 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
           {/* Section 2: Jméno a Příjmení */}
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-              Jméno a Příjmení <span className="text-emerald-400">*</span>
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+              Jméno a Příjmení <span className="text-emerald-600">*</span>
             </label>
             <div className="relative">
               <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -284,30 +284,28 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 placeholder="Např. Petr Novák"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-800 rounded-xl text-white text-sm focus:ring-2 focus:ring-emerald-400 outline-none"
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200 focus:bg-white focus:ring-2 focus:ring-emerald-500 text-slate-900 text-sm outline-none"
               />
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">
+            <p className="text-[11px] text-slate-500 mt-1">
               Vaše výchozí jméno v aplikaci (použije se v týmech, kde nemáte nastavenou specifickou přezdívku).
             </p>
           </div>
 
-
-
           {/* Section 2: Týmy - Přezdívky & Nastavení notifikací (přímo pod sekcí jména) */}
           {teams.length > 0 && (
-            <div className="border-t border-slate-800 pt-4 space-y-3">
+            <div className="border-t border-slate-150 pt-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center space-x-1.5">
-                    <Tag className="w-3.5 h-3.5 text-emerald-400" />
+                  <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center space-x-1.5">
+                    <Tag className="w-3.5 h-3.5 text-emerald-600" />
                     <span>Přezdívky & Notifikace v týmech</span>
                   </label>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-[11px] text-slate-500">
                     Nastavte si pro každý tým přezdívku a zvolte, jaká upozornění a připomenutí chcete dostávat.
                   </p>
                 </div>
-                <span className="text-xs font-bold px-2 py-0.5 bg-slate-800 text-emerald-400 rounded-lg shrink-0">
+                <span className="text-xs font-bold px-2 py-0.5 bg-slate-100 text-slate-700 border border-slate-200 rounded-lg shrink-0">
                   {teams.length} {teams.length === 1 ? 'tým' : teams.length < 5 ? 'týmy' : 'týmů'}
                 </span>
               </div>
@@ -329,31 +327,31 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   return (
                     <div
                       key={team.id}
-                      className={`p-3.5 sm:p-4 rounded-xl transition ${
-                        isActive ? 'bg-slate-850' : 'bg-slate-950/80'
+                      className={`p-3.5 sm:p-4 rounded-xl transition border ${
+                        isActive ? 'bg-slate-50 border-emerald-300' : 'bg-slate-50/70 border-slate-200'
                       }`}
                     >
                       {/* Team Header */}
                       <div className="flex items-center justify-between mb-2.5">
                         <div className="flex items-center space-x-2 truncate">
-                          <Building2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                          <span className="text-xs sm:text-sm font-bold text-white truncate">
+                          <Building2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span className="text-xs sm:text-sm font-bold text-slate-900 truncate">
                             {team.name}
                           </span>
                           {isActive && (
-                            <span className="text-[10px] bg-emerald-500 text-slate-950 font-black px-1.5 py-0.2 rounded shrink-0">
+                            <span className="text-[10px] bg-emerald-600 text-white font-black px-1.5 py-0.2 rounded shrink-0 shadow-2xs">
                               Aktivní tým
                             </span>
                           )}
                         </div>
-                        <span className="text-[10px] font-mono text-slate-400 shrink-0">
+                        <span className="text-[10px] font-mono text-slate-500 shrink-0">
                           #{team.code}
                         </span>
                       </div>
 
                       {/* Nickname input */}
                       <div className="mb-3">
-                        <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                        <label className="block text-[11px] font-semibold text-slate-700 mb-1">
                           Přezdívka v tomto týmu:
                         </label>
                         <div className="relative">
@@ -363,13 +361,13 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                             placeholder="Zadejte přezdívku (nebo ponechte prázdné)..."
                             value={currentNick}
                             onChange={(e) => handleNicknameChange(team.id, e.target.value)}
-                            className="w-full pl-9 pr-20 py-2 bg-slate-800 rounded-xl text-white text-xs sm:text-sm focus:ring-2 focus:ring-emerald-400 outline-none"
+                            className="w-full pl-9 pr-20 py-2 bg-white rounded-xl border border-slate-200 text-slate-900 text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
                           />
                           {currentNick && (
                             <button
                               type="button"
                               onClick={() => handleClearNickname(team.id)}
-                              className="absolute right-1.5 top-1/2 -translate-y-1/2 px-2 py-1 bg-rose-950/80 hover:bg-rose-900 text-rose-300 text-[10px] font-bold rounded-lg transition flex items-center cursor-pointer"
+                              className="absolute right-1.5 top-1/2 -translate-y-1/2 px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[10px] font-bold rounded-lg transition flex items-center cursor-pointer"
                               title="Vymazat přezdívku"
                             >
                               <Trash2 className="w-3 h-3 mr-0.5" />
@@ -377,45 +375,45 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                             </button>
                           )}
                         </div>
-                        <div className="mt-1 text-[11px] flex items-center justify-between text-slate-400">
+                        <div className="mt-1 text-[11px] flex items-center justify-between text-slate-500">
                           <span>Zobrazeno jako:</span>
-                          <span className="font-bold text-emerald-400 flex items-center">
-                            <Sparkles className="w-3 h-3 text-emerald-400 mr-1 shrink-0" />
+                          <span className="font-bold text-emerald-700 flex items-center">
+                            <Sparkles className="w-3 h-3 text-emerald-600 mr-1 shrink-0" />
                             „{teamDisplayName}“
                           </span>
                         </div>
                       </div>
 
                       {/* Notification Preferences accordion/box for this team */}
-                      <div className="bg-slate-900 rounded-xl overflow-hidden shadow-xs">
+                      <div className="bg-white rounded-xl overflow-hidden shadow-2xs border border-slate-200">
                         <button
                           type="button"
                           onClick={() => toggleTeamNotificationSection(team.id)}
-                          className="w-full p-2.5 px-3 bg-slate-800/80 hover:bg-slate-800 text-left flex items-center justify-between transition cursor-pointer"
+                          className="w-full p-2.5 px-3 bg-slate-50 hover:bg-slate-100 text-left flex items-center justify-between transition cursor-pointer"
                         >
                           <div className="flex items-center space-x-2">
-                            <Bell className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                            <span className="text-xs font-bold text-slate-200">
+                            <Bell className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                            <span className="text-xs font-bold text-slate-800">
                               Nastavení notifikací pro {team.name}
                             </span>
                           </div>
-                          <div className="flex items-center space-x-1 text-slate-400 text-xs font-bold">
+                          <div className="flex items-center space-x-1 text-slate-500 text-xs font-bold">
                             <span>{isExpanded ? 'Sbalit' : 'Upravit'}</span>
                             {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                           </div>
                         </button>
 
                         {isExpanded && (
-                          <div className="p-3 space-y-3 bg-slate-900/90 border-t border-slate-800">
+                          <div className="p-3 space-y-3 bg-white border-t border-slate-200">
                             
                             {/* 1. Týmová připomenutí nadcházející akce */}
-                            <div className="flex items-start justify-between gap-2 pb-2.5 border-b border-slate-800">
+                            <div className="flex items-start justify-between gap-2 pb-2.5 border-b border-slate-100">
                               <div className="pr-2">
-                                <label className="text-xs font-bold text-white flex items-center space-x-1.5">
-                                  <Bell className="w-3.5 h-3.5 text-emerald-400" />
+                                <label className="text-xs font-bold text-slate-900 flex items-center space-x-1.5">
+                                  <Bell className="w-3.5 h-3.5 text-emerald-600" />
                                   <span>Týmová připomenutí událostí</span>
                                 </label>
-                                <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
+                                <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
                                   Dostávat hromadná připomenutí (např. 24h a 2h předem) nastavená tvůrcem události.
                                 </p>
                               </div>
@@ -423,19 +421,19 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                                 type="checkbox"
                                 checked={prefs.teamRemindersEnabled ?? true}
                                 onChange={(e) => handlePrefChange(team.id, 'teamRemindersEnabled', e.target.checked)}
-                                className="w-4 h-4 text-emerald-500 rounded focus:ring-emerald-400 cursor-pointer mt-0.5 bg-slate-800 border-none"
+                                className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500 cursor-pointer mt-0.5"
                               />
                             </div>
 
                             {/* 2. Uživatelská notifikace o nutnosti zadat účast */}
-                            <div className="pb-2.5 border-b border-slate-800 space-y-2">
+                            <div className="pb-2.5 border-b border-slate-100 space-y-2">
                               <div className="flex items-start justify-between gap-2">
                                 <div className="pr-2">
-                                  <label className="text-xs font-bold text-white flex items-center space-x-1.5">
-                                    <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
+                                  <label className="text-xs font-bold text-slate-900 flex items-center space-x-1.5">
+                                    <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
                                     <span>Výzva k zadání docházky</span>
                                   </label>
-                                  <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
+                                  <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
                                     Upozornit mě, pokud jsem ještě nezadal(a) svou účast na nejbližší akci. Pokud už jste účast zadali, notifikace se nevytvoří.
                                   </p>
                                 </div>
@@ -443,19 +441,19 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                                   type="checkbox"
                                   checked={prefs.attendanceReminderEnabled ?? true}
                                   onChange={(e) => handlePrefChange(team.id, 'attendanceReminderEnabled', e.target.checked)}
-                                  className="w-4 h-4 text-emerald-500 rounded focus:ring-emerald-400 cursor-pointer mt-0.5 bg-slate-800 border-none"
+                                  className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500 cursor-pointer mt-0.5"
                                 />
                               </div>
 
                               {prefs.attendanceReminderEnabled && (
                                 <div className="pl-5 pt-1">
-                                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">
                                     Předstih upozornění na docházku:
                                   </label>
                                   <select
                                     value={prefs.attendanceReminderHours ?? 24}
                                     onChange={(e) => handlePrefChange(team.id, 'attendanceReminderHours', Number(e.target.value))}
-                                    className="w-full text-xs py-1.5 px-2.5 bg-slate-800 rounded-lg text-white font-bold outline-none"
+                                    className="w-full text-xs py-1.5 px-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 font-bold outline-none"
                                   >
                                     <option value={48}>48 hodin předem (2 dny)</option>
                                     <option value={24}>24 hodin předem (výchozí)</option>
@@ -470,13 +468,13 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                             </div>
 
                             {/* 3. Notifikace o chatu události */}
-                            <div className="flex items-start justify-between gap-2 pb-2.5 border-b border-slate-800">
+                            <div className="flex items-start justify-between gap-2 pb-2.5 border-b border-slate-100">
                               <div className="pr-2">
-                                <label className="text-xs font-bold text-white flex items-center space-x-1.5">
-                                  <MessageSquare className="w-3.5 h-3.5 text-blue-400" />
+                                <label className="text-xs font-bold text-slate-900 flex items-center space-x-1.5">
+                                  <MessageSquare className="w-3.5 h-3.5 text-blue-600" />
                                   <span>Zprávy v chatu událostí</span>
                                 </label>
-                                <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
+                                <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
                                   Upozornit na nové zprávy a komentáře v diskuzích u zápasů a tréninků tohoto týmu.
                                 </p>
                               </div>
@@ -484,18 +482,18 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                                 type="checkbox"
                                 checked={prefs.chatNotificationsEnabled ?? true}
                                 onChange={(e) => handlePrefChange(team.id, 'chatNotificationsEnabled', e.target.checked)}
-                                className="w-4 h-4 text-emerald-500 rounded focus:ring-emerald-400 cursor-pointer mt-0.5 bg-slate-800 border-none"
+                                className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500 cursor-pointer mt-0.5"
                               />
                             </div>
 
                             {/* 4. Vytvoření nové události v týmu */}
-                            <div className="flex items-start justify-between gap-2 pb-2.5 border-b border-slate-800">
+                            <div className="flex items-start justify-between gap-2 pb-2.5 border-b border-slate-100">
                               <div className="pr-2">
-                                <label className="text-xs font-bold text-white flex items-center space-x-1.5">
-                                  <CalendarPlus className="w-3.5 h-3.5 text-emerald-400" />
+                                <label className="text-xs font-bold text-slate-900 flex items-center space-x-1.5">
+                                  <CalendarPlus className="w-3.5 h-3.5 text-emerald-600" />
                                   <span>Vytvoření nové události</span>
                                 </label>
-                                <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
+                                <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
                                   Upozornit mě, když někdo v tomto týmu vytvoří novou událost, zápas nebo trénink.
                                 </p>
                               </div>
@@ -503,18 +501,18 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                                 type="checkbox"
                                 checked={prefs.eventCreatedNotificationEnabled ?? true}
                                 onChange={(e) => handlePrefChange(team.id, 'eventCreatedNotificationEnabled', e.target.checked)}
-                                className="w-4 h-4 text-emerald-500 rounded focus:ring-emerald-400 cursor-pointer mt-0.5 bg-slate-800 border-none"
+                                className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500 cursor-pointer mt-0.5"
                               />
                             </div>
 
                             {/* 5. Změna / úprava údajů události v týmu */}
-                            <div className="flex items-start justify-between gap-2 pb-2.5 border-b border-slate-800">
+                            <div className="flex items-start justify-between gap-2 pb-2.5 border-b border-slate-100">
                               <div className="pr-2">
-                                <label className="text-xs font-bold text-white flex items-center space-x-1.5">
-                                  <Pencil className="w-3.5 h-3.5 text-sky-400" />
+                                <label className="text-xs font-bold text-slate-900 flex items-center space-x-1.5">
+                                  <Pencil className="w-3.5 h-3.5 text-sky-600" />
                                   <span>Změna a úprava události</span>
                                 </label>
-                                <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
+                                <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
                                   Upozornit mě, když dojde ke změně termínu, času nebo místa konání akce.
                                 </p>
                               </div>
@@ -522,18 +520,18 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                                 type="checkbox"
                                 checked={prefs.eventUpdatedNotificationEnabled ?? true}
                                 onChange={(e) => handlePrefChange(team.id, 'eventUpdatedNotificationEnabled', e.target.checked)}
-                                className="w-4 h-4 text-emerald-500 rounded focus:ring-emerald-400 cursor-pointer mt-0.5 bg-slate-800 border-none"
+                                className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500 cursor-pointer mt-0.5"
                               />
                             </div>
 
                             {/* 6. Zrušení / smazání události v týmu */}
                             <div className="flex items-start justify-between gap-2">
                               <div className="pr-2">
-                                <label className="text-xs font-bold text-white flex items-center space-x-1.5">
-                                  <CalendarX className="w-3.5 h-3.5 text-rose-400" />
+                                <label className="text-xs font-bold text-slate-900 flex items-center space-x-1.5">
+                                  <CalendarX className="w-3.5 h-3.5 text-rose-600" />
                                   <span>Zrušení události</span>
                                 </label>
-                                <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
+                                <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
                                   Upozornit mě, pokud správce zruší nebo smaže některou z plánovaných akcí tohoto týmu.
                                 </p>
                               </div>
@@ -541,7 +539,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                                 type="checkbox"
                                 checked={prefs.eventCancelledNotificationEnabled ?? true}
                                 onChange={(e) => handlePrefChange(team.id, 'eventCancelledNotificationEnabled', e.target.checked)}
-                                className="w-4 h-4 text-emerald-500 rounded focus:ring-emerald-400 cursor-pointer mt-0.5 bg-slate-800 border-none"
+                                className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500 cursor-pointer mt-0.5"
                               />
                             </div>
 
@@ -557,14 +555,14 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           )}
 
           {/* Section 3: Velikost písma v aplikaci (pod sekcí týmů) */}
-          <div className="border-t border-slate-800 pt-4">
+          <div className="border-t border-slate-150 pt-4">
             <div className="flex items-center justify-between mb-2">
               <div>
-                <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center space-x-1.5">
-                  <Type className="w-3.5 h-3.5 text-emerald-400" />
+                <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center space-x-1.5">
+                  <Type className="w-3.5 h-3.5 text-emerald-600" />
                   <span>Velikost písma v aplikaci</span>
                 </label>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-slate-500">
                   Přizpůsobte si velikost textu pro pohodlnější čtení na mobilu i počítači.
                 </p>
               </div>
@@ -578,14 +576,14 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                     key={opt.id}
                     type="button"
                     onClick={() => handleFontSizeSelect(opt.id)}
-                    className={`p-2 sm:p-2.5 rounded-xl text-center transition flex flex-col items-center justify-between min-w-0 overflow-hidden cursor-pointer ${
+                    className={`p-2 sm:p-2.5 rounded-xl text-center transition flex flex-col items-center justify-between min-w-0 overflow-hidden cursor-pointer border ${
                       isSelected
-                        ? 'bg-emerald-500 text-slate-950 font-black shadow-md ring-2 ring-emerald-400'
-                        : 'bg-slate-800 hover:bg-slate-750 text-slate-300'
+                        ? 'bg-emerald-50 text-slate-950 font-black border-2 border-emerald-500 shadow-xs'
+                        : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
                     }`}
                   >
                     <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded truncate max-w-full block mb-1 ${
-                      isSelected ? 'bg-slate-950/20 text-slate-950' : 'bg-slate-900 text-slate-400'
+                      isSelected ? 'bg-emerald-200/80 text-emerald-950' : 'bg-slate-200 text-slate-700'
                     }`}>
                       {opt.badge}
                     </span>
@@ -594,46 +592,46 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                         {opt.label}
                       </div>
                       <div className={`text-[10px] font-semibold ${
-                        isSelected ? 'text-slate-950/80' : 'text-emerald-400'
+                        isSelected ? 'text-emerald-800' : 'text-slate-500'
                       }`}>
                         {opt.sizeMultiplier}
                       </div>
                     </div>
                     {isSelected ? (
-                      <div className="mt-1 w-4 h-4 rounded-full bg-slate-950 text-emerald-400 flex items-center justify-center shrink-0">
+                      <div className="mt-1 w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0">
                         <Check className="w-2.5 h-2.5 stroke-[3]" />
                       </div>
                     ) : (
-                      <div className="mt-1 w-4 h-4 rounded-full bg-slate-700/60 shrink-0" />
+                      <div className="mt-1 w-4 h-4 rounded-full bg-slate-300 shrink-0" />
                     )}
                   </button>
                 );
               })}
             </div>
-            <div className="mt-2 flex items-center justify-between text-[11px] text-slate-400 bg-slate-950 px-2.5 py-1.5 rounded-lg">
+            <div className="mt-2 flex items-center justify-between text-[11px] text-slate-600 bg-slate-50 border border-slate-200 px-2.5 py-1.5 rounded-lg">
               <span>Živý náhled:</span>
-              <span className="font-semibold text-emerald-400">
+              <span className="font-bold text-emerald-700">
                 {selectedFontSize === 'xlarge' ? 'Největší (+28 %)' : selectedFontSize === 'large' ? 'Větší (+12,5 %)' : 'Standardní (100 %)'}
               </span>
             </div>
           </div>
 
           {/* Section 4: Testování notifikací (tlačítko umístěné dole) */}
-          <div className="border-t border-slate-800 pt-4">
-            <div className="bg-slate-950/80 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="border-t border-slate-150 pt-4">
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="min-w-0">
-                <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
-                  <Bell className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                  <Bell className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                   <span>Test systémových notifikací</span>
                 </h4>
-                <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
+                <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
                   Vyzkoušejte, zda vaše zařízení správně přijímá a zobrazuje push notifikace.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={handleTestSystemNotification}
-                className="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-bold rounded-xl text-xs shrink-0 transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md"
+                className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold rounded-xl text-xs shrink-0 transition cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
               >
                 <Bell className="w-3.5 h-3.5" />
                 <span>Otestovat notifikace</span>
@@ -641,19 +639,19 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             </div>
 
             {testNotificationStatus && (
-              <div className="mt-2.5 p-2.5 bg-emerald-950/80 text-emerald-300 text-xs rounded-xl flex items-center animate-in fade-in font-medium">
-                <Check className="w-3.5 h-3.5 mr-1.5 shrink-0 text-emerald-400" />
+              <div className="mt-2.5 p-2.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl flex items-center animate-in fade-in font-medium">
+                <Check className="w-3.5 h-3.5 mr-1.5 shrink-0 text-emerald-600" />
                 <span>{testNotificationStatus}</span>
               </div>
             )}
           </div>
           {/* Section 5: Účet a odhlášení */}
           {onSignOut && (
-            <div className="border-t border-slate-800 pt-4">
-              <div className="bg-slate-950/80 rounded-xl p-3.5 flex items-center justify-between gap-3">
+            <div className="border-t border-slate-150 pt-4">
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="text-xs font-bold text-white">Přihlášený účet</div>
-                  <div className="text-[11px] text-slate-400 truncate">{currentUser.email}</div>
+                  <div className="text-xs font-bold text-slate-900">Přihlášený účet</div>
+                  <div className="text-[11px] text-slate-500 truncate">{currentUser.email}</div>
                 </div>
                 <button
                   type="button"
@@ -661,7 +659,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                     onClose();
                     onSignOut();
                   }}
-                  className="px-3.5 py-2 bg-rose-500/15 hover:bg-rose-500/25 active:bg-rose-500/30 text-rose-400 font-bold rounded-xl text-xs flex items-center gap-1.5 transition cursor-pointer shrink-0"
+                  className="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-bold rounded-xl text-xs flex items-center gap-1.5 transition cursor-pointer shrink-0"
                 >
                   <LogOut className="w-3.5 h-3.5" />
                   <span>Odhlásit se</span>
@@ -669,10 +667,22 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               </div>
             </div>
           )}
+
+          {/* Informace o aplikaci a databázi */}
+          <div className="border-t border-slate-150 pt-4 pb-1">
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center text-xs space-y-0.5">
+              <div className="font-semibold text-slate-700">
+                Sejdeme se — Týmová docházka & Realtime chat
+              </div>
+              <div className="text-[11px] text-slate-400">
+                Všechna data jsou bezpečně ukládána do cloudové databáze Firebase Firestore
+              </div>
+            </div>
+          </div>
         </form>
 
         {/* Fixed Footer Buttons */}
-        <div className="p-3.5 sm:p-4 bg-slate-950 border-t border-slate-800 flex items-center gap-2 sm:gap-3 shrink-0">
+        <div className="p-3.5 sm:p-4 bg-slate-50 border-t border-slate-200 flex items-center gap-2 sm:gap-3 shrink-0">
           {onSignOut && (
             <button
               type="button"
@@ -680,7 +690,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 onClose();
                 onSignOut();
               }}
-              className="py-2.5 px-3 bg-rose-500/15 hover:bg-rose-500/25 active:bg-rose-500/30 text-rose-400 font-bold rounded-xl transition text-xs sm:text-sm flex items-center justify-center space-x-1.5 cursor-pointer shrink-0"
+              className="py-2.5 px-3 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-bold rounded-xl transition text-xs sm:text-sm flex items-center justify-center space-x-1.5 cursor-pointer shrink-0"
               title="Odhlásit se z účtu"
             >
               <LogOut className="w-4 h-4" />
@@ -690,7 +700,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           <button
             type="button"
             onClick={handleCancelModal}
-            className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-750 text-slate-200 font-bold rounded-xl transition text-xs sm:text-sm cursor-pointer"
+            className="flex-1 py-2.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 font-bold rounded-xl transition text-xs sm:text-sm cursor-pointer shadow-2xs"
           >
             Zrušit
           </button>
@@ -698,7 +708,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             type="submit"
             form="user-profile-form"
             disabled={loading}
-            className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 font-black rounded-xl shadow-md transition disabled:opacity-50 text-xs sm:text-sm flex items-center justify-center space-x-1.5 cursor-pointer"
+            className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-black rounded-xl shadow-md shadow-emerald-600/20 transition disabled:opacity-50 text-xs sm:text-sm flex items-center justify-center space-x-1.5 cursor-pointer"
           >
             <Check className="w-4 h-4 stroke-[3]" />
             <span>{loading ? 'Ukládání...' : 'Uložit'}</span>

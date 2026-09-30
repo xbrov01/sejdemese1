@@ -499,9 +499,9 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">
-        <div className="flex items-center space-x-3">
-          <RefreshCw className="w-6 h-6 animate-spin text-emerald-400" />
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-800">
+        <div className="flex items-center space-x-3 bg-white px-5 py-3 rounded-2xl border border-slate-200 shadow-xs">
+          <RefreshCw className="w-5 h-5 animate-spin text-emerald-600" />
           <span className="font-semibold text-sm">Načítání aplikace Sejdeme se...</span>
         </div>
       </div>
@@ -509,7 +509,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-800 text-slate-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-slate-950 pb-20 sm:pb-8">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-emerald-500 selection:text-slate-950 pb-20 sm:pb-8">
       
       {/* Header */}
       {currentUser && (
@@ -537,18 +537,18 @@ export default function App() {
         {currentUser ? (
           <>
             {teams.length === 0 ? (
-              <div className="bg-slate-900 rounded-2xl p-8 text-center max-w-lg mx-auto shadow-2xl my-6">
-                <div className="w-12 h-12 bg-emerald-500/20 text-emerald-400 rounded-2xl flex items-center justify-center mx-auto mb-3">
+              <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center max-w-lg mx-auto shadow-xs my-6">
+                <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-3 border border-emerald-100">
                   <Users className="w-6 h-6" />
                 </div>
-                <h3 className="text-lg font-bold text-white">Vyberte nebo se připojte k týmu</h3>
-                <p className="text-xs text-slate-400 mt-1 mb-5">
+                <h3 className="text-lg font-bold text-slate-900">Vyberte nebo se připojte k týmu</h3>
+                <p className="text-xs text-slate-500 mt-1 mb-5">
                   Pro zobrazení docházky a plánovaných událostí se připojte k týmu pomocí kódu nebo vytvořte nový tým.
                 </p>
                 <div className="flex flex-wrap justify-center gap-2">
                   <button
                     onClick={() => setTeamModalMode('join')}
-                    className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-md transition cursor-pointer"
+                    className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-xs transition cursor-pointer"
                   >
                     <Key className="w-3.5 h-3.5" />
                     <span>Připojit se k týmu</span>
@@ -556,9 +556,9 @@ export default function App() {
                   {currentUser.role === 'admin' && (
                     <button
                       onClick={() => setTeamModalMode('create')}
-                      className="px-4 py-2.5 bg-slate-800 hover:bg-slate-750 text-slate-200 font-bold text-xs rounded-xl flex items-center gap-1.5 transition cursor-pointer"
+                      className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl flex items-center gap-1.5 transition cursor-pointer border border-slate-200"
                     >
-                      <Plus className="w-3.5 h-3.5" />
+                      <Plus className="w-3.5 h-3.5 text-emerald-600" />
                       <span>Vytvořit nový tým</span>
                     </button>
                   )}
@@ -567,27 +567,27 @@ export default function App() {
             ) : isAllTeamsSelected ? (
               /* ================== PŘEHLED / DASHBOARD: VŠECHNY TÝMY ================== */
               <div className="space-y-6">
-                <div className="bg-slate-900 border border-slate-700/60 p-5 rounded-2xl shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="bg-white border border-slate-200/90 p-5 rounded-2xl shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>
-                    <div className="text-[10px] uppercase font-bold text-emerald-400 tracking-wider flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <div className="text-[10px] uppercase font-bold text-emerald-700 tracking-wider flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                       Úvodní přehled • Všechny mé týmy ({teams.length})
                     </div>
-                    <h2 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2 mt-0.5">
+                    <h2 className="text-xl sm:text-2xl font-black text-slate-950 flex items-center gap-2 mt-0.5">
                       Nadcházející události
                       <span className="text-xs font-black text-slate-950 bg-emerald-400 px-2.5 py-0.5 rounded-full">
                         {upcomingEvents.length}
                       </span>
                     </h2>
-                    <p className="text-xs text-slate-400 mt-1">
+                    <p className="text-xs text-slate-500 mt-1">
                       Kompletní přehled tréninků a zápasů napříč všemi vašimi týmy.
                     </p>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
-                    {/* Rychlý přepínač týmu (filtry pro dotyk i myš - solid buttons, no outline) */}
+                    {/* Rychlý přepínač týmu */}
                     <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full no-scrollbar">
-                      <span className="text-[11px] font-semibold text-slate-400 mr-1 hidden sm:inline">
+                      <span className="text-[11px] font-semibold text-slate-500 mr-1 hidden sm:inline">
                         Přejít na tým:
                       </span>
                       {teams.map((t) => {
@@ -597,7 +597,7 @@ export default function App() {
                             key={t.id}
                             type="button"
                             onClick={() => setActiveTeamId(t.id)}
-                            className="px-3 py-1.5 bg-slate-800 hover:bg-slate-750 active:bg-slate-700 text-slate-200 text-xs rounded-xl font-bold transition shrink-0 cursor-pointer shadow-xs flex items-center gap-1.5"
+                            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 text-xs rounded-xl font-bold transition shrink-0 cursor-pointer shadow-2xs border border-slate-200 flex items-center gap-1.5"
                           >
                             <span>{t.name}</span>
                             {upcomingCount > 0 && (
@@ -614,9 +614,9 @@ export default function App() {
                       <button
                         type="button"
                         onClick={seedDemoData}
-                        className="px-3.5 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-xs font-bold rounded-xl flex items-center space-x-1.5 transition cursor-pointer shadow-xs"
+                        className="px-3.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold rounded-xl flex items-center space-x-1.5 transition cursor-pointer border border-emerald-200 shadow-2xs"
                       >
-                        <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                        <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
                         <span>Vložit ukázková data (Demo)</span>
                       </button>
                     )}
@@ -624,27 +624,27 @@ export default function App() {
                 </div>
 
                 {upcomingEvents.length === 0 ? (
-                  <div className="bg-slate-900 rounded-2xl p-12 text-center shadow-lg">
-                    <div className="w-12 h-12 bg-slate-800 text-slate-400 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                  <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center shadow-xs">
+                    <div className="w-12 h-12 bg-slate-100 text-slate-500 rounded-2xl flex items-center justify-center mx-auto mb-3">
                       <Calendar className="w-6 h-6" />
                     </div>
-                    <h4 className="text-base font-bold text-white">
+                    <h4 className="text-base font-bold text-slate-900">
                       Žádné nadcházející události
                     </h4>
-                    <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1 mb-4">
+                    <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4">
                       V žádném z vašich týmů zatím nejsou naplánovány žádné nadcházející tréninky ani zápasy.
                     </p>
 
                     {currentUser.role === 'admin' ? (
                       <button
                         onClick={() => setShowCreateEventModal(true)}
-                        className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 font-black rounded-xl text-xs inline-flex items-center space-x-2 shadow-md transition cursor-pointer"
+                        className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 font-black rounded-xl text-xs inline-flex items-center space-x-2 shadow-xs transition cursor-pointer"
                       >
                         <Plus className="w-4 h-4 stroke-[3]" />
                         <span>Vytvořit novou událost</span>
                       </button>
                     ) : (
-                      <p className="text-xs text-slate-400 italic">
+                      <p className="text-xs text-slate-500 italic">
                         Nové události může vytvářet pouze Správce týmu.
                       </p>
                     )}
@@ -673,15 +673,15 @@ export default function App() {
             ) : activeTeam ? (
               /* ================== JEDNOTLIVÝ TÝM ================== */
               <div className="space-y-6">
-                <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900 border border-slate-700/60 p-4 sm:p-5 rounded-2xl shadow-xl">
+                <div className="flex flex-wrap items-center justify-between gap-3 bg-white border border-slate-200/90 p-4 sm:p-5 rounded-2xl shadow-xs">
                   <div>
-                    <div className="text-[10px] uppercase font-bold text-emerald-400 tracking-wider">
+                    <div className="text-[10px] uppercase font-bold text-emerald-700 tracking-wider">
                       Aktivní tým #{activeTeam.code}
                     </div>
-                    <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2 mt-0.5">
-                      <Users className="w-5 h-5 text-emerald-400" />
+                    <h2 className="text-lg sm:text-xl font-black text-slate-950 flex items-center gap-2 mt-0.5">
+                      <Users className="w-5 h-5 text-emerald-600" />
                       {activeTeam.name}
-                      <span className="text-xs font-normal text-slate-400">
+                      <span className="text-xs font-normal text-slate-500">
                         ({activeTeam.memberEmails?.length || 1} členů)
                       </span>
                     </h2>
@@ -691,19 +691,19 @@ export default function App() {
                     <button
                       type="button"
                       onClick={() => setActiveTeamId('ALL')}
-                      className="px-3 py-1.5 bg-slate-800 hover:bg-slate-750 active:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl transition cursor-pointer shadow-xs flex items-center gap-1"
+                      className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 text-xs font-bold rounded-xl transition cursor-pointer border border-slate-200 shadow-2xs flex items-center gap-1"
                     >
-                      <LayoutDashboard className="w-3.5 h-3.5 text-emerald-400" />
+                      <LayoutDashboard className="w-3.5 h-3.5 text-emerald-600" />
                       <span>← Zpět na Vše</span>
                     </button>
                     {currentUser.role === 'admin' && (
                       <button
                         type="button"
                         onClick={() => setTeamModalMode('settings')}
-                        className="px-3 py-1.5 bg-purple-900/70 hover:bg-purple-800 active:bg-purple-700 text-purple-200 text-xs font-bold rounded-xl flex items-center space-x-1.5 transition cursor-pointer shadow-xs"
+                        className="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 active:bg-purple-200 text-purple-800 text-xs font-bold rounded-xl flex items-center space-x-1.5 transition cursor-pointer border border-purple-200 shadow-2xs"
                         title="Změnit výchozí barvu a obrázek pozadí karty události"
                       >
-                        <Palette className="w-3.5 h-3.5 text-purple-300" />
+                        <Palette className="w-3.5 h-3.5 text-purple-600" />
                         <span>Vzhled karet</span>
                       </button>
                     )}
@@ -711,9 +711,9 @@ export default function App() {
                       <button
                         type="button"
                         onClick={seedDemoData}
-                        className="px-3.5 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-xs font-bold rounded-xl flex items-center space-x-1.5 transition cursor-pointer shadow-xs"
+                        className="px-3.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold rounded-xl flex items-center space-x-1.5 transition cursor-pointer border border-emerald-200 shadow-2xs"
                       >
-                        <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                        <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
                         <span>Vložit ukázková data (Demo)</span>
                       </button>
                     )}
@@ -724,8 +724,8 @@ export default function App() {
                   {/* Nadcházející události */}
                   <div>
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-                        <Calendar className="w-5 h-5 text-emerald-400" />
+                      <h3 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <Calendar className="w-5 h-5 text-emerald-600" />
                         <span>Nadcházející události</span>
                         <span className="text-xs font-black text-slate-950 bg-emerald-400 px-2.5 py-0.5 rounded-full">
                           {upcomingEvents.length}
@@ -734,21 +734,21 @@ export default function App() {
                     </div>
 
                     {upcomingEvents.length === 0 ? (
-                      <div className="bg-slate-900 rounded-2xl p-10 text-center shadow-lg">
-                        <div className="w-12 h-12 bg-slate-800 text-slate-400 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                      <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center shadow-xs">
+                        <div className="w-12 h-12 bg-slate-100 text-slate-500 rounded-2xl flex items-center justify-center mx-auto mb-3">
                           <Calendar className="w-6 h-6" />
                         </div>
-                        <h4 className="text-base font-bold text-white">
+                        <h4 className="text-base font-bold text-slate-900">
                           Žádné nadcházející události
                         </h4>
-                        <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1 mb-4">
+                        <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4">
                           V tomto týmu zatím nejsou naplánovány žádné nadcházející tréninky ani zápasy.
                         </p>
 
                         {currentUser.role === 'admin' && (
                           <button
                             onClick={() => setShowCreateEventModal(true)}
-                            className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 font-black rounded-xl text-xs inline-flex items-center space-x-2 shadow-md transition cursor-pointer"
+                            className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 font-black rounded-xl text-xs inline-flex items-center space-x-2 shadow-xs transition cursor-pointer"
                           >
                             <Plus className="w-4 h-4 stroke-[3]" />
                             <span>Vytvořit novou událost</span>
@@ -774,42 +774,33 @@ export default function App() {
                   </div>
 
                   {/* Samostatný kolapsovaný panel pro uplynulé události na spodní části stránky */}
-                  <div className="bg-slate-900 rounded-2xl overflow-hidden shadow-xl">
+                  <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
                     <button
                       type="button"
                       onClick={() => setIsPastEventsExpanded(!isPastEventsExpanded)}
-                      className="w-full p-4 sm:p-5 flex items-center justify-between text-left bg-slate-850 hover:bg-slate-800 transition cursor-pointer"
+                      className="w-full px-4 py-3.5 flex items-center justify-between text-left bg-slate-50/80 hover:bg-slate-100 transition cursor-pointer"
                     >
-                      <div className="flex items-center space-x-3">
-                        <div className="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center text-slate-300 shrink-0">
-                          <History className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <div className="flex items-center space-x-2">
-                            <h3 className="text-sm sm:text-base font-bold text-white">
-                              Uplynulé události
-                            </h3>
-                            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-slate-800 text-slate-300">
-                              {pastEvents.length}
-                            </span>
-                          </div>
-                          <p className="text-xs text-slate-400 mt-0.5">
-                            Archiv proběhlých událostí (docházka a diskuze jsou uzavřeny)
-                          </p>
-                        </div>
+                      <div className="flex items-center space-x-2.5">
+                        <History className="w-4 h-4 text-slate-500" />
+                        <h3 className="text-sm font-bold text-slate-900">
+                          Uplynulé události
+                        </h3>
+                        <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-slate-200 text-slate-700">
+                          {pastEvents.length}
+                        </span>
                       </div>
 
-                      <div className="flex items-center space-x-1.5 text-xs font-bold text-slate-300 bg-slate-800 px-3 py-1.5 rounded-xl shadow-xs">
-                        <span>{isPastEventsExpanded ? 'Skrýt uplynulé' : 'Zobrazit uplynulé'}</span>
+                      <div className="flex items-center space-x-1.5 text-xs font-bold text-slate-700 bg-white border border-slate-200 px-3 py-1.5 rounded-xl shadow-2xs">
+                        <span>{isPastEventsExpanded ? 'Skrýt' : 'Zobrazit'}</span>
                         {isPastEventsExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                       </div>
                     </button>
 
                     {isPastEventsExpanded && (
-                      <div className="p-4 sm:p-5 pt-2 border-t border-slate-800 space-y-6 bg-slate-950/60">
+                      <div className="p-4 sm:p-5 pt-3 border-t border-slate-200 space-y-6 bg-slate-50/60">
                         {pastEvents.length === 0 ? (
-                          <div className="text-center py-8 text-xs text-slate-400 italic">
-                            V tomto týmu zatím nejsou žádné uplynulé události.
+                          <div className="text-center py-6 text-xs text-slate-400">
+                            Žádné uplynulé události
                           </div>
                         ) : (
                           pastEvents.map((event) => (
@@ -833,23 +824,11 @@ export default function App() {
           </>
         ) : (
           <div className="text-center py-20">
-            <h2 className="text-2xl font-bold text-white">Přihlášení do aplikace</h2>
-            <p className="text-sm text-slate-400 mt-1">Zadejte své údaje v zobrazeném okně.</p>
+            <h2 className="text-2xl font-bold text-slate-900">Přihlášení do aplikace</h2>
+            <p className="text-sm text-slate-500 mt-1">Zadejte své údaje v zobrazeném okně.</p>
           </div>
         )}
       </main>
-
-      {/* Footer */}
-      <footer className="bg-slate-950 border-t border-slate-850 py-6 text-center text-xs text-slate-400">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="font-semibold text-slate-300">
-            Sejdeme se — Týmová docházka & Realtime chat
-          </div>
-          <div className="text-slate-500">
-            Všechna data jsou ukládána do cloudové databáze Firebase Firestore
-          </div>
-        </div>
-      </footer>
 
       {/* Ergonomic Mobile Bottom Navigation Bar with Team Selector */}
       {currentUser && (
