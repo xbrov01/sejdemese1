@@ -23,6 +23,8 @@ export interface UserProfile {
   name: string; // Jméno a Příjmení
   email: string; // Uživatelské jméno
   role: UserRole;
+  isSuperAdmin?: boolean; // Globální systémová práva pro správu všech týmů a událostí
+  isSystemAccount?: boolean; // Systémový účet skrytý z běžných seznamů hráčů
   createdAt?: string;
   password?: string;
   tempPassword?: string;
@@ -39,6 +41,7 @@ export interface Team {
   code: string;
   createdBy: string; // admin email
   memberEmails: string[];
+  adminEmails?: string[]; // seznam emailů správců týmu
   nicknames?: Record<string, string>; // userEmail -> nickname
   createdAt?: string;
   cardBgColor?: string; // výchozí barva pozadí karty události (např. #0f172a)

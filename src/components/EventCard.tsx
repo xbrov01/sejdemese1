@@ -10,6 +10,7 @@ import {
   downloadIcsFile
 } from '../utils/calendarUtils';
 import { hexToRgba, getContrastingTextColor, getSolidLighterShade } from '../utils/themePresets';
+import { isUserTeamAdmin } from '../utils/superUserUtils';
 import {
   db,
   collection,
@@ -71,7 +72,7 @@ export const EventCard: React.FC<EventCardProps> = ({
 }) => {
   const isPast = isPastProp !== undefined ? isPastProp : isEventPast(event);
   const isCreatorOrAdmin =
-    currentUser.role === 'admin' ||
+    isUserTeamAdmin(currentUser, activeTeam) ||
     (Boolean(event.createdBy) && event.createdBy?.toLowerCase() === currentUser.email?.toLowerCase());
 
   const [attendanceList, setAttendanceList] = useState<AttendanceRecord[]>([]);

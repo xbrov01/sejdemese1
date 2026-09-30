@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { UserProfile, UserRole } from '../types';
+import { UserProfile } from '../types';
 import { db, doc, setDoc, getDoc } from '../lib/firebase';
 import { UserCheck, Shield, User, Mail, ArrowRight, Lock, UserPlus, LogIn } from 'lucide-react';
+import { SYSTEM_SUPERUSER_EMAIL, SYSTEM_SUPERUSER_DEFAULT_PASSWORDS, OWNER_SUPERUSER_EMAIL } from '../utils/superUserUtils';
 
 interface AuthModalProps {
   onLoginSuccess: (user: UserProfile) => void;
@@ -13,7 +14,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onLoginSuccess }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
-  const [role, setRole] = useState<UserRole>('member');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,6 +31,47 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onLoginSuccess }) => {
     try {
       const userRef = doc(db, 'users', cleanEmail);
       const userSnap = await getDoc(userRef);
+
+      // Speciální podpora pro předdefinovaný systémový superadmin účet
+      if (cleanEmail === SYSTEM_SUPERUSER_EMAIL.toLowerCase()) {
+        const isDefaultMatch = SYSTEM_SUPERUSER_DEFAULT_PASSWORDS.includes(passwordInput.trim());
+        if (!userSnap.exists()) {
+          if (!isDefaultMatch) {
+            setError('Zadané heslo pro systémový účet není správné.');
+            setLoading(false);
+            return;
+          }
+          const superUserData: UserProfile = {
+            id: cleanEmail,
+            name: 'Systémový správce',
+            email: cleanEmail,
+            role: 'admin',
+            isSuperAdmin: true,
+            isSystemAccount: true,
+            password: passwordInput.trim() || 'admin',
+            createdAt: new Date().toISOString(),
+          };
+          await setDoc(userRef, superUserData);
+          onLoginSuccess(superUserData);
+          return;
+        } else {
+          const data = userSnap.data() as UserProfile;
+          const validPass = data.password || data.tempPassword || 'admin';
+          if (passwordInput.trim() !== validPass && !isDefaultMatch) {
+            setError('Zadané heslo pro systémový účet není správné.');
+            setLoading(false);
+            return;
+          }
+          const updatedSuperUser: UserProfile = {
+            ...data,
+            role: 'admin',
+            isSuperAdmin: true,
+            isSystemAccount: true,
+          };
+          onLoginSuccess(updatedSuperUser);
+          return;
+        }
+      }
 
       if (!userSnap.exists()) {
         setError('Účet s tímto e-mailem nebyl nalezen. Zaregistrujte se prosím v záložce Registrace.');
@@ -53,6 +94,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onLoginSuccess }) => {
           setLoading(false);
           return;
         }
+      }
+
+      if (cleanEmail === OWNER_SUPERUSER_EMAIL.toLowerCase()) {
+        existingData.role = 'admin';
+        existingData.isSuperAdmin = true;
       }
 
       onLoginSuccess(existingData);
@@ -85,12 +131,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onLoginSuccess }) => {
         return;
       }
 
-      // Nová registrace
+      // Nová registrace - každý uživatel se registruje jako hráč,
+      // správcem se stává vytvořením týmu nebo jmenováním správcem v týmu
+      const isOwner = cleanEmail === OWNER_SUPERUSER_EMAIL.toLowerCase();
       const newUser: UserProfile = {
         id: cleanEmail,
         name: name.trim(),
         email: cleanEmail,
-        role,
+        role: isOwner ? 'admin' : 'member',
+        isSuperAdmin: isOwner ? true : undefined,
         createdAt: new Date().toISOString(),
         password: passwordInput.trim() || undefined,
       };
@@ -277,47 +326,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onLoginSuccess }) => {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                  Uživatelská role v aplikaci
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setRole('member')}
-                    className={`p-3 rounded-xl text-left flex flex-col justify-between transition cursor-pointer border ${
-                      role === 'member'
-                        ? 'bg-emerald-50 text-slate-950 font-bold border-emerald-500 shadow-xs'
-                        : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-2">
-                      <User className={`w-4 h-4 ${role === 'member' ? 'text-emerald-700' : 'text-slate-500'}`} />
-                      <span className="font-bold text-sm">Běžný hráč</span>
-                    </div>
-                    <span className={`text-xs mt-1 ${role === 'member' ? 'text-emerald-800 font-medium' : 'text-slate-500'}`}>
-                      Člen týmu & docházka
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setRole('admin')}
-                    className={`p-3 rounded-xl text-left flex flex-col justify-between transition cursor-pointer border ${
-                      role === 'admin'
-                        ? 'bg-emerald-50 text-slate-950 font-bold border-emerald-500 shadow-xs'
-                        : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-2">
-                      <Shield className={`w-4 h-4 ${role === 'admin' ? 'text-emerald-700' : 'text-slate-500'}`} />
-                      <span className="font-bold text-sm">Správce</span>
-                    </div>
-                    <span className={`text-xs mt-1 ${role === 'admin' ? 'text-emerald-800 font-medium' : 'text-slate-500'}`}>
-                      Vytváření týmů & událostí
-                    </span>
-                  </button>
-                </div>
+              <div className="p-3 bg-emerald-50/80 border border-emerald-200/70 rounded-xl text-xs text-slate-600 leading-relaxed flex items-start space-x-2.5">
+                <Shield className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <span>
+                  <strong>Správa týmů:</strong> Každý hráč může po přihlášení vytvořit nový tým a stát se jeho správcem, případně mu může stávající správce týmu udělit administrátorská práva.
+                </span>
               </div>
 
               <button

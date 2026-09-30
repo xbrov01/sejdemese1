@@ -26,7 +26,8 @@ import { checkAndGenerateReminders, showBrowserNotification, sendEventCancelledN
 import { getMemberDisplayName } from './utils/userUtils';
 import { applyAppFontSize, getInitialFontSize } from './utils/fontSizeUtils';
 import { setupNativeStatusBar, initPushNotifications, setupAndroidBackButton, setupAppStateListener } from './lib/capacitor';
-import { Calendar, Plus, RefreshCw, ShieldAlert, Sparkles, Users, Key, Palette, History, ChevronDown, ChevronUp, LayoutDashboard, Bell } from 'lucide-react';
+import { isUserSuperAdmin, isUserTeamAdmin } from './utils/superUserUtils';
+import { Calendar, Plus, RefreshCw, ShieldAlert, Sparkles, Users, Key, Palette, History, ChevronDown, ChevronUp, LayoutDashboard, Bell, Settings } from 'lucide-react';
 
 const LOCAL_STORAGE_USER_KEY = 'sejdemese_active_user_email';
 const PUSHED_NOTIFICATIONS_STORAGE_PREFIX = 'sejdemese_pushed_notif_ids_';
@@ -195,10 +196,11 @@ export default function App() {
     const teamsRef = collection(db, 'teams');
     const unsubscribe = onSnapshot(teamsRef, (snapshot) => {
       const tList: Team[] = [];
+      const isSuper = isUserSuperAdmin(currentUser);
       snapshot.forEach((docSnap) => {
         const data = docSnap.data() as Team;
-        // Zobrazujeme týmy, kde je uživatel v členové NEBO které vytvořil
-        if (data.memberEmails?.includes(currentUser.email) || data.createdBy === currentUser.email) {
+        // Zobrazujeme týmy, kde je uživatel členem NEBO které vytvořil, případně VŠECHNY týmy pro superadmina
+        if (isSuper || data.memberEmails?.includes(currentUser.email) || data.createdBy === currentUser.email) {
           tList.push({ id: docSnap.id, ...data });
         }
       });
@@ -409,6 +411,7 @@ export default function App() {
   // Aktivní tým objekt (null pokud je vybráno 'ALL')
   const activeTeam = activeTeamId === 'ALL' ? null : (teams.find((t) => t.id === activeTeamId) || null);
   const isAllTeamsSelected = activeTeamId === 'ALL';
+  const isCurrentTeamAdmin = isUserTeamAdmin(currentUser, activeTeam);
   const unreadNotificationCount = notifications.filter((n) => !n.read).length;
 
   // Filtrování událostí na nadcházející a uplynulé
@@ -553,15 +556,13 @@ export default function App() {
                     <Key className="w-3.5 h-3.5" />
                     <span>Připojit se k týmu</span>
                   </button>
-                  {currentUser.role === 'admin' && (
-                    <button
-                      onClick={() => setTeamModalMode('create')}
-                      className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl flex items-center gap-1.5 transition cursor-pointer border border-slate-200"
-                    >
-                      <Plus className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>Vytvořit nový tým</span>
-                    </button>
-                  )}
+                  <button
+                    onClick={() => setTeamModalMode('create')}
+                    className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl flex items-center gap-1.5 transition cursor-pointer border border-slate-200"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Vytvořit nový tým</span>
+                  </button>
                 </div>
               </div>
             ) : isAllTeamsSelected ? (
@@ -635,7 +636,7 @@ export default function App() {
                       V žádném z vašich týmů zatím nejsou naplánovány žádné nadcházející tréninky ani zápasy.
                     </p>
 
-                    {currentUser.role === 'admin' ? (
+                    {isCurrentTeamAdmin ? (
                       <button
                         onClick={() => setShowCreateEventModal(true)}
                         className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 font-black rounded-xl text-xs inline-flex items-center space-x-2 shadow-xs transition cursor-pointer"
@@ -696,15 +697,15 @@ export default function App() {
                       <LayoutDashboard className="w-3.5 h-3.5 text-emerald-600" />
                       <span>← Zpět na Vše</span>
                     </button>
-                    {currentUser.role === 'admin' && (
+                    {isCurrentTeamAdmin && (
                       <button
                         type="button"
                         onClick={() => setTeamModalMode('settings')}
-                        className="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 active:bg-purple-200 text-purple-800 text-xs font-bold rounded-xl flex items-center space-x-1.5 transition cursor-pointer border border-purple-200 shadow-2xs"
-                        title="Změnit výchozí barvu a obrázek pozadí karty události"
+                        className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 text-xs font-bold rounded-xl flex items-center space-x-1.5 transition cursor-pointer border border-slate-200 shadow-2xs"
+                        title="Nastavení týmu, změna kódu a vzhledu událostí"
                       >
-                        <Palette className="w-3.5 h-3.5 text-purple-600" />
-                        <span>Vzhled karet</span>
+                        <Settings className="w-3.5 h-3.5 text-slate-600" />
+                        <span>Nastavení týmu</span>
                       </button>
                     )}
                     {events.length === 0 && (
@@ -745,7 +746,7 @@ export default function App() {
                           V tomto týmu zatím nejsou naplánovány žádné nadcházející tréninky ani zápasy.
                         </p>
 
-                        {currentUser.role === 'admin' && (
+                        {isCurrentTeamAdmin && (
                           <button
                             onClick={() => setShowCreateEventModal(true)}
                             className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 font-black rounded-xl text-xs inline-flex items-center space-x-2 shadow-xs transition cursor-pointer"

@@ -6,6 +6,8 @@ import { getUserTeamNotificationPreferences, sendTestBrowserNotification } from 
 import { FONT_SIZE_OPTIONS, applyAppFontSize, getInitialFontSize, saveFontSizePreference } from '../utils/fontSizeUtils';
 import { User, Tag, Check, X, Mail, Trash2, Sparkles, Building2, Bell, AlertCircle, MessageSquare, ChevronDown, ChevronUp, Smartphone, CalendarPlus, CalendarX, Pencil, Type, LogOut } from 'lucide-react';
 
+import { isUserSuperAdmin } from '../utils/superUserUtils';
+
 interface UserProfileModalProps {
   currentUser: UserProfile;
   activeTeam: Team | null;
@@ -224,8 +226,14 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   <Mail className="w-3 h-3 mr-1 text-slate-400 shrink-0" />
                   <span className="truncate">{currentUser.email}</span>
                 </span>
-                <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 shrink-0">
-                  {currentUser.role === 'admin' ? 'Správce' : 'Člen'}
+                <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full shrink-0 border ${
+                  isUserSuperAdmin(currentUser)
+                    ? 'bg-amber-50 text-amber-900 border-amber-300'
+                    : currentUser.role === 'admin'
+                    ? 'bg-purple-50 text-purple-800 border-purple-200'
+                    : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                }`}>
+                  {isUserSuperAdmin(currentUser) ? 'Superadmin' : currentUser.role === 'admin' ? 'Správce' : 'Člen'}
                 </span>
               </div>
             </div>

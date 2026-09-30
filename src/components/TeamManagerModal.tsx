@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { UserProfile, Team } from '../types';
-import { db, collection, addDoc, doc, updateDoc, arrayUnion, arrayRemove } from '../lib/firebase';
+import { db, collection, addDoc, doc, updateDoc, arrayUnion, arrayRemove, getDocs, query, where } from '../lib/firebase';
 import {
   Users,
   Plus,
@@ -8,6 +8,8 @@ import {
   X,
   Check,
   Shield,
+  ShieldCheck,
+  Crown,
   UserPlus,
   UserMinus,
   Copy,
@@ -22,8 +24,10 @@ import {
   Calendar,
   Clock,
   MapPin,
+  Pencil,
 } from 'lucide-react';
 import { COLOR_PRESETS, IMAGE_PRESETS, compressImageFile, hexToRgba, getContrastingTextColor, getSolidLighterShade } from '../utils/themePresets';
+import { isUserTeamAdmin, SYSTEM_SUPERUSER_EMAIL } from '../utils/superUserUtils';
 
 export type TeamModalMode = 'create' | 'join' | 'members' | 'settings';
 
@@ -52,6 +56,7 @@ export const TeamManagerModal: React.FC<TeamManagerModalProps> = ({
 
   // Create & Settings State
   const [teamName, setTeamName] = useState(activeTeam?.name || '');
+  const [editTeamCode, setEditTeamCode] = useState(activeTeam?.code || '');
   const [cardBgColor, setCardBgColor] = useState(activeTeam?.cardBgColor || '#059669');
   const [cardBgImage, setCardBgImage] = useState<string>(activeTeam?.cardBgImage || '');
   const [customImageUrl, setCustomImageUrl] = useState('');
@@ -73,10 +78,12 @@ export const TeamManagerModal: React.FC<TeamManagerModalProps> = ({
   React.useEffect(() => {
     if (mode === 'settings' && activeTeam) {
       setTeamName(activeTeam.name);
+      setEditTeamCode(activeTeam.code || '');
       setCardBgColor(activeTeam.cardBgColor || '#059669');
       setCardBgImage(activeTeam.cardBgImage || '');
     } else if (mode === 'create') {
       setTeamName('');
+      setEditTeamCode('');
       setCardBgColor('#059669');
       setCardBgImage('');
     }
@@ -171,13 +178,33 @@ export const TeamManagerModal: React.FC<TeamManagerModalProps> = ({
       return;
     }
 
+    const cleanCode = editTeamCode.trim().toUpperCase().replace(/\s+/g, '-');
+    if (!cleanCode) {
+      setError('Kód týmu nesmí být prázdný.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
+      // Pokud se kód změnil, ověříme jeho unikátnost
+      if (cleanCode !== activeTeam.code) {
+        const teamsRef = collection(db, 'teams');
+        const q = query(teamsRef, where('code', '==', cleanCode));
+        const snap = await getDocs(q);
+        const codeInUse = snap.docs.some((d) => d.id !== activeTeam.id);
+        if (codeInUse) {
+          setError(`Kód týmu „${cleanCode}“ již používá jiný tým. Zvolte prosím jiný kód.`);
+          setLoading(false);
+          return;
+        }
+      }
+
       const teamRef = doc(db, 'teams', activeTeam.id);
       const updateData: Partial<Team> = {
         name: teamName.trim(),
+        code: cleanCode,
         cardBgColor: cardBgColor || '#0f172a',
         cardBgImage: cardBgImage || '',
       };
@@ -193,7 +220,7 @@ export const TeamManagerModal: React.FC<TeamManagerModalProps> = ({
         onTeamUpdated(updated);
       }
 
-      setSuccessMsg('Nastavení a vzhled týmu byly úspěšně uloženy!');
+      setSuccessMsg('Nastavení, kód a vzhled týmu byly úspěšně uloženy!');
       setTimeout(() => {
         setSuccessMsg(null);
         onClose();
@@ -255,6 +282,8 @@ export const TeamManagerModal: React.FC<TeamManagerModalProps> = ({
     }
   };
 
+  const isCurrentTeamAdmin = isUserTeamAdmin(currentUser, activeTeam);
+
   // Správa členů
   const handleToggleMember = async (userEmail: string, isCurrentlyMember: boolean) => {
     if (!activeTeam) return;
@@ -265,6 +294,7 @@ export const TeamManagerModal: React.FC<TeamManagerModalProps> = ({
       if (isCurrentlyMember) {
         await updateDoc(teamRef, {
           memberEmails: arrayRemove(userEmail),
+          adminEmails: arrayRemove(userEmail),
         });
       } else {
         await updateDoc(teamRef, {
@@ -274,6 +304,69 @@ export const TeamManagerModal: React.FC<TeamManagerModalProps> = ({
     } catch (err: any) {
       console.error('Chyba při změně členství:', err);
       setError('Nepodařilo se upravit členství.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Udělení / odebrání práv správce týmu
+  const handleToggleAdminPrivileges = async (targetUser: UserProfile, assignAdmin: boolean) => {
+    if (!activeTeam) return;
+
+    if (!assignAdmin && targetUser.email.toLowerCase() === activeTeam.createdBy.toLowerCase()) {
+      setError('Nelze odebrat práva správce zakladateli týmu.');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const teamRef = doc(db, 'teams', activeTeam.id);
+      const userRef = doc(db, 'users', targetUser.email);
+
+      if (assignAdmin) {
+        // 1. Zaznamenat do adminEmails v týmu bez duplicit
+        const currentAdmins = activeTeam.adminEmails || [];
+        const isAlreadyAdmin = currentAdmins.some((e) => e.toLowerCase() === targetUser.email.toLowerCase());
+        const newAdminEmails = isAlreadyAdmin ? currentAdmins : [...currentAdmins, targetUser.email];
+
+        await updateDoc(teamRef, {
+          adminEmails: newAdminEmails,
+          memberEmails: arrayUnion(targetUser.email),
+        });
+
+        // 2. Nastavit roli 'admin' v profilu uživatele
+        await updateDoc(userRef, {
+          role: 'admin',
+        });
+
+        setSuccessMsg(`Hráč „${targetUser.name}“ byl úspěšně jmenován správcem týmu!`);
+      } else {
+        // 1. Spolehlivě odebrat z adminEmails v týmu (case-insensitive)
+        const filteredAdminEmails = (activeTeam.adminEmails || []).filter(
+          (e) => e.toLowerCase() !== targetUser.email.toLowerCase()
+        );
+
+        await updateDoc(teamRef, {
+          adminEmails: filteredAdminEmails,
+        });
+
+        // 2. Nastavit roli 'member' v profilu uživatele
+        await updateDoc(userRef, {
+          role: 'member',
+        });
+
+        setSuccessMsg(`Hráči „${targetUser.name}“ byla odebrána práva správce týmu.`);
+      }
+
+      setTimeout(() => setSuccessMsg(null), 3000);
+      if (onTeamUpdated) {
+        onTeamUpdated();
+      }
+    } catch (err: any) {
+      console.error('Chyba při změně práv správce:', err);
+      setError('Nepodařilo se změnit práva správce týmu.');
     } finally {
       setLoading(false);
     }
@@ -362,21 +455,19 @@ export const TeamManagerModal: React.FC<TeamManagerModalProps> = ({
             <span>Kód týmu</span>
           </button>
 
-          {currentUser.role === 'admin' && (
-            <button
-              onClick={() => { setMode('create'); setError(null); setSuccessMsg(null); }}
-              className={`flex-1 min-w-[100px] py-1.5 px-2 text-xs font-bold rounded-xl transition flex items-center justify-center space-x-1 cursor-pointer ${
-                mode === 'create'
-                  ? 'bg-white text-slate-950 font-black shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
-              }`}
-            >
-              <Plus className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Nový tým</span>
-            </button>
-          )}
+          <button
+            onClick={() => { setMode('create'); setError(null); setSuccessMsg(null); }}
+            className={`flex-1 min-w-[100px] py-1.5 px-2 text-xs font-bold rounded-xl transition flex items-center justify-center space-x-1 cursor-pointer ${
+              mode === 'create'
+                ? 'bg-white text-slate-950 font-black shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
+            }`}
+          >
+            <Plus className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Nový tým</span>
+          </button>
 
-          {currentUser.role === 'admin' && activeTeam && (
+          {isCurrentTeamAdmin && activeTeam && (
             <button
               onClick={() => { setMode('settings'); setError(null); setSuccessMsg(null); }}
               className={`flex-1 min-w-[100px] py-1.5 px-2 text-xs font-bold rounded-xl transition flex items-center justify-center space-x-1 cursor-pointer ${
@@ -390,7 +481,7 @@ export const TeamManagerModal: React.FC<TeamManagerModalProps> = ({
             </button>
           )}
 
-          {currentUser.role === 'admin' && activeTeam && (
+          {isCurrentTeamAdmin && activeTeam && (
             <button
               onClick={() => { setMode('members'); setError(null); setSuccessMsg(null); }}
               className={`flex-1 min-w-[100px] py-1.5 px-2 text-xs font-bold rounded-xl transition flex items-center justify-center space-x-1 cursor-pointer ${
@@ -478,6 +569,29 @@ export const TeamManagerModal: React.FC<TeamManagerModalProps> = ({
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none"
                 />
               </div>
+
+              {/* Kód týmu (lze upravit v nastavení týmu) */}
+              {mode === 'settings' && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Kód týmu (připojovací kód pro hráče)
+                  </label>
+                  <div className="relative">
+                    <Key className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      required
+                      placeholder="např. FUTSAL-888"
+                      value={editTeamCode}
+                      onChange={(e) => setEditTeamCode(e.target.value.toUpperCase().replace(/\s+/g, '-'))}
+                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono text-sm uppercase font-bold focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none"
+                    />
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    Pomocí tohoto kódu se noví hráči připojují k týmu. Můžete jej kdykoliv upravit.
+                  </p>
+                </div>
+              )}
 
               {/* VÝCHOZÍ BARVA POZADÍ KARTY UDÁLOSTI */}
               <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl space-y-3">
@@ -745,24 +859,52 @@ export const TeamManagerModal: React.FC<TeamManagerModalProps> = ({
                     #{activeTeam.code}
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => copyCodeToClipboard(activeTeam.code)}
-                  className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center space-x-1.5 transition cursor-pointer shadow-2xs"
-                >
-                  <Copy className="w-3.5 h-3.5" />
-                  <span>{copiedCode ? 'Zkopírováno!' : 'Zkopírovat'}</span>
-                </button>
+                <div className="flex items-center space-x-1.5">
+                  <button
+                    type="button"
+                    onClick={() => copyCodeToClipboard(activeTeam.code)}
+                    className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center space-x-1.5 transition cursor-pointer shadow-2xs"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>{copiedCode ? 'Zkopírováno!' : 'Zkopírovat'}</span>
+                  </button>
+                  {isCurrentTeamAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => { setMode('settings'); setError(null); setSuccessMsg(null); }}
+                      className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl flex items-center space-x-1.5 transition cursor-pointer border border-slate-200 shadow-2xs"
+                      title="Změnit kód týmu"
+                    >
+                      <Pencil className="w-3.5 h-3.5 text-slate-600" />
+                      <span>Změnit kód</span>
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div>
-                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                  Seznam všech registrovaných hráčů ({allUsers.length}):
-                </h4>
-                <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-                  {allUsers.map((u) => {
-                    const isMember = activeTeam.memberEmails?.includes(u.email);
-                    const memberNickname = activeTeam.nicknames?.[u.email];
+                {(() => {
+                  const visibleUsers = allUsers.filter(
+                    (u) =>
+                      !u.isSystemAccount &&
+                      u.email?.toLowerCase() !== SYSTEM_SUPERUSER_EMAIL.toLowerCase()
+                  );
+
+                  return (
+                    <>
+                      <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                        Seznam všech registrovaných hráčů ({visibleUsers.length}):
+                      </h4>
+                      <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                        {visibleUsers.map((u) => {
+                          const isMember = activeTeam.memberEmails?.includes(u.email);
+                          const memberNickname = activeTeam.nicknames?.[u.email];
+                          const isCreator = activeTeam.createdBy?.toLowerCase() === u.email?.toLowerCase();
+                          const isUserAdmin = Boolean(
+                            isCreator ||
+                            activeTeam.adminEmails?.some((e) => e.toLowerCase() === u.email?.toLowerCase())
+                          );
+
                     return (
                       <div
                         key={u.id}
@@ -778,11 +920,17 @@ export const TeamManagerModal: React.FC<TeamManagerModalProps> = ({
                                 Přezdívka: „{memberNickname}“
                               </span>
                             )}
-                            {u.role === 'admin' && (
-                              <span className="bg-purple-50 text-purple-700 border border-purple-200 text-[10px] px-1.5 py-0.2 rounded font-bold">
-                                Správce
+                            {isCreator ? (
+                              <span className="bg-purple-100 text-purple-900 border border-purple-200 text-[10px] px-1.5 py-0.5 rounded font-bold flex items-center gap-1">
+                                <Crown className="w-3 h-3 text-purple-700" />
+                                <span>Zakladatel</span>
                               </span>
-                            )}
+                            ) : isUserAdmin ? (
+                              <span className="bg-purple-50 text-purple-700 border border-purple-200 text-[10px] px-1.5 py-0.5 rounded font-bold flex items-center gap-1">
+                                <Shield className="w-3 h-3 text-purple-600" />
+                                <span>Správce</span>
+                              </span>
+                            ) : null}
                           </div>
                           <div className="text-[11px] text-slate-500 truncate">{u.email}</div>
                           {u.requirePasswordReset && (
@@ -793,6 +941,37 @@ export const TeamManagerModal: React.FC<TeamManagerModalProps> = ({
                         </div>
 
                         <div className="flex items-center space-x-1.5">
+                          {/* Tlačítko přidělení / odebrání práv správce (viditelné pro správce týmu u členů) */}
+                          {isMember && isCurrentTeamAdmin && (
+                            <>
+                              {isUserAdmin && !isCreator ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleAdminPrivileges(u, false)}
+                                  disabled={loading}
+                                  title={`Odebrat práva správce týmu uživateli ${u.name}`}
+                                  className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-purple-50 hover:bg-rose-50 text-purple-800 hover:text-rose-700 border border-purple-200 hover:border-rose-200 transition flex items-center space-x-1 cursor-pointer shadow-2xs group"
+                                >
+                                  <Shield className="w-3.5 h-3.5 text-purple-600 group-hover:text-rose-600" />
+                                  <span className="hidden sm:inline">Odebrat správce</span>
+                                  <span className="sm:hidden">-Admin</span>
+                                </button>
+                              ) : !isCreator ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleAdminPrivileges(u, true)}
+                                  disabled={loading}
+                                  title={`Udělit práva správce týmu uživateli ${u.name}`}
+                                  className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-white hover:bg-purple-50 text-slate-700 hover:text-purple-800 border border-slate-200 hover:border-purple-200 transition flex items-center space-x-1 cursor-pointer shadow-2xs group"
+                                >
+                                  <ShieldCheck className="w-3.5 h-3.5 text-slate-400 group-hover:text-purple-600" />
+                                  <span className="hidden sm:inline">Udělit správce</span>
+                                  <span className="sm:hidden">+Admin</span>
+                                </button>
+                              ) : null}
+                            </>
+                          )}
+
                           {/* Admin Password Reset Button */}
                           {currentUser.role === 'admin' && (
                             <button
@@ -834,9 +1013,12 @@ export const TeamManagerModal: React.FC<TeamManagerModalProps> = ({
                     );
                   })}
                 </div>
-              </div>
-            </div>
-          )}
+              </>
+            );
+          })()}
+        </div>
+      </div>
+    )}
         </div>
       </div>
     </div>

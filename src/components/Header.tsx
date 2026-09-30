@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { UserProfile, Team } from '../types';
-import { Users, Plus, Shield, LogOut, ChevronDown, UserCheck, Key, Settings, LayoutDashboard, Palette, Bell, Check } from 'lucide-react';
+import { Users, Plus, Shield, LogOut, ChevronDown, UserCheck, Key, Settings, LayoutDashboard, Palette, Bell, Check, Crown } from 'lucide-react';
+import { isUserTeamAdmin, isUserSuperAdmin } from '../utils/superUserUtils';
 
 interface HeaderProps {
   currentUser: UserProfile;
@@ -40,7 +41,8 @@ export const Header: React.FC<HeaderProps> = ({
   const [isTeamMenuOpen, setIsTeamMenuOpen] = useState(false);
   const teamMenuRef = useRef<HTMLDivElement | null>(null);
 
-  const isAdmin = currentUser.role === 'admin';
+  const isAdmin = isUserTeamAdmin(currentUser, activeTeam);
+  const isSuper = isUserSuperAdmin(currentUser);
   const currentTeamNickname = activeTeam?.nicknames?.[currentUser.email] || currentUser.teamNicknames?.[activeTeam?.id || ''];
 
   // Zavření dropdownu při kliknutí/dotyku mimo menu nebo při stisku Escape
@@ -224,27 +226,24 @@ export const Header: React.FC<HeaderProps> = ({
                         <span>Připojit k týmu pomocí kódu</span>
                       </button>
 
-                      {isAdmin && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => handleActionAndClose(onOpenCreateTeam)}
-                            className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-800 bg-white hover:bg-slate-100 border border-slate-200 active:bg-slate-200 rounded-xl flex items-center transition cursor-pointer"
-                          >
-                            <Plus className="w-3.5 h-3.5 mr-2 shrink-0 text-emerald-600" />
-                            <span>Vytvořit nový tým</span>
-                          </button>
-                          {activeTeam && onOpenTeamSettings && (
-                            <button
-                              type="button"
-                              onClick={() => handleActionAndClose(onOpenTeamSettings)}
-                              className="w-full text-left px-3 py-2 text-xs font-semibold text-purple-700 bg-white hover:bg-purple-50 border border-slate-200 active:bg-purple-100 rounded-xl flex items-center transition cursor-pointer"
-                            >
-                              <Palette className="w-3.5 h-3.5 mr-2 shrink-0 text-purple-600" />
-                              <span>Vzhled & styl aktivního týmu</span>
-                            </button>
-                          )}
-                        </>
+                      <button
+                        type="button"
+                        onClick={() => handleActionAndClose(onOpenCreateTeam)}
+                        className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-800 bg-white hover:bg-slate-100 border border-slate-200 active:bg-slate-200 rounded-xl flex items-center transition cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5 mr-2 shrink-0 text-emerald-600" />
+                        <span>Vytvořit nový tým</span>
+                      </button>
+
+                      {isAdmin && activeTeam && onOpenTeamSettings && (
+                        <button
+                          type="button"
+                          onClick={() => handleActionAndClose(onOpenTeamSettings)}
+                          className="w-full text-left px-3 py-2 text-xs font-semibold text-purple-700 bg-white hover:bg-purple-50 border border-slate-200 active:bg-purple-100 rounded-xl flex items-center transition cursor-pointer"
+                        >
+                          <Palette className="w-3.5 h-3.5 mr-2 shrink-0 text-purple-600" />
+                          <span>Vzhled & styl aktivního týmu</span>
+                        </button>
                       )}
                     </div>
                   </div>
@@ -260,16 +259,14 @@ export const Header: React.FC<HeaderProps> = ({
                   <Key className="w-3.5 h-3.5 sm:mr-1 text-emerald-600" />
                   <span className="hidden sm:inline">Připojit</span>
                 </button>
-                {isAdmin && (
-                  <button
-                    type="button"
-                    onClick={onOpenCreateTeam}
-                    className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 text-xs font-bold rounded-xl flex items-center transition shadow-xs cursor-pointer"
-                  >
-                    <Plus className="w-3.5 h-3.5 sm:mr-1" />
-                    <span className="hidden sm:inline">Vytvořit</span>
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={onOpenCreateTeam}
+                  className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 text-xs font-bold rounded-xl flex items-center transition shadow-xs cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5 sm:mr-1" />
+                  <span className="hidden sm:inline">Vytvořit</span>
+                </button>
               </div>
             )}
           </div>
@@ -279,44 +276,15 @@ export const Header: React.FC<HeaderProps> = ({
             
             {/* Akce administrátora pro události a tým */}
             {isAdmin && (activeTeam || (isAllTeamsSelected && teams.length > 0)) && (
-              <>
-                {/* Tlačítko Vytvořit událost */}
-                <button
-                  type="button"
-                  onClick={onOpenCreateEvent}
-                  className="p-2 sm:p-2.5 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 rounded-xl flex items-center justify-center transition shadow-xs cursor-pointer"
-                  title="Vytvořit novou událost"
-                  aria-label="Vytvořit novou událost"
-                >
-                  <Plus className="w-4 h-4 sm:w-5 sm:h-5 stroke-[3]" />
-                </button>
-
-                {activeTeam && (
-                  <>
-                    {/* Tlačítko Vzhled karty */}
-                    <button
-                      type="button"
-                      onClick={onOpenTeamSettings || onOpenManageMembers}
-                      className="p-2 sm:p-2.5 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-purple-700 rounded-xl flex items-center justify-center transition cursor-pointer border border-slate-200"
-                      title="Změnit vzhled, barvu nebo pozadí karty události"
-                      aria-label="Vzhled karet"
-                    >
-                      <Palette className="w-4 h-4 text-purple-600" />
-                    </button>
-
-                    {/* Tlačítko Správa členů */}
-                    <button
-                      type="button"
-                      onClick={onOpenManageMembers}
-                      className="p-2 sm:p-2.5 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 rounded-xl flex items-center justify-center transition cursor-pointer border border-slate-200"
-                      title="Správa členů týmu"
-                      aria-label="Správa členů týmu"
-                    >
-                      <Settings className="w-4 h-4 text-slate-600" />
-                    </button>
-                  </>
-                )}
-              </>
+              <button
+                type="button"
+                onClick={onOpenCreateEvent}
+                className="p-2 sm:p-2.5 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 rounded-xl flex items-center justify-center transition shadow-xs cursor-pointer"
+                title="Vytvořit novou událost"
+                aria-label="Vytvořit novou událost"
+              >
+                <Plus className="w-4 h-4 sm:w-5 sm:h-5 stroke-[3]" />
+              </button>
             )}
 
             {/* Notifikační zvonek */}
@@ -345,9 +313,11 @@ export const Header: React.FC<HeaderProps> = ({
               <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-emerald-500 text-slate-950 flex items-center justify-center font-black text-xs sm:text-sm shrink-0">
                 {currentUser.name ? currentUser.name.trim().charAt(0).toUpperCase() : currentUser.email.charAt(0).toUpperCase()}
               </div>
-              {isAdmin && (
+              {isSuper ? (
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 border border-amber-600 absolute -top-0.5 -right-0.5 shadow-xs" title="Systémový superadmin" />
+              ) : isAdmin ? (
                 <span className="w-2 h-2 rounded-full bg-purple-500 absolute top-1 right-1" title="Správce" />
-              )}
+              ) : null}
             </button>
 
           </div>
