@@ -85,8 +85,7 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
     if (isClearing || notifications.length === 0) return;
     setIsClearing(true);
     try {
-      const ids = notifications.map((n) => n.id);
-      await clearAllNotifications(activeEmail, ids);
+      await clearAllNotifications(activeEmail, notifications);
     } catch (err) {
       console.error('Chyba při mazání oznámení:', err);
     } finally {
@@ -429,7 +428,7 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        deleteNotification(notif.id);
+                        deleteNotification(notif.id, notif.userEmail || activeEmail, notif.notificationKey);
                       }}
                       className="w-7 h-7 rounded-lg flex items-center justify-center bg-slate-100 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer border border-slate-200"
                       title="Smazat oznámení"

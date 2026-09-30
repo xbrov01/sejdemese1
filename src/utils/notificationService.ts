@@ -1,4 +1,4 @@
-import { db, collection, addDoc, doc, updateDoc, deleteDoc, getDocs, query, where } from '../lib/firebase';
+import { db, collection, addDoc, doc, updateDoc, deleteDoc, getDoc, setDoc, getDocs, query, where } from '../lib/firebase';
 import { Event, Team, UserProfile, NotificationItem, AttendanceRecord } from '../types';
 import { isEventPast } from './eventUtils';
 import { isNative, scheduleNativeNotification, scheduleScheduledNativeNotification } from '../lib/capacitor';
@@ -195,25 +195,132 @@ export const getUserTeamNotificationPreferences = (user: UserProfile, teamId: st
   };
 };
 
+// ============================================================================
+// TRVALÁ EVIDENCE VYŘÍZENÝCH PŘIPOMENUTÍ (Zabraňuje opakovanému zobrazení po smazání či restartu)
+// ============================================================================
+
+const HANDLED_KEYS_STORAGE_PREFIX = 'sejdemese_handled_notif_keys_';
+const memoryHandledKeys = new Set<string>();
+
+const getHandledDocId = (userEmail: string, notificationKey: string): string => {
+  return `${userEmail.toLowerCase().replace(/[^a-z0-9_-]/g, '_')}___${notificationKey.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+};
+
+const getStoredHandledKeys = (userEmail: string): Set<string> => {
+  if (!userEmail) return new Set();
+  const emailKey = userEmail.toLowerCase();
+  try {
+    const raw = localStorage.getItem(HANDLED_KEYS_STORAGE_PREFIX + emailKey);
+    if (!raw) return new Set();
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return new Set(parsed);
+    }
+  } catch (e) {
+    console.warn('Chyba při čtení handled notification keys z localStorage:', e);
+  }
+  return new Set();
+};
+
 /**
- * Vytvoří novou notifikaci v databázi (s kontrolou proti duplicitě podle notificationKey).
- * Pokud je notifikace určena pro aktuálně přihlášeného uživatele v popředí, rovnou vyvolá systémovou notifikaci.
+ * Trvale zaznamená klíč notifikace jako vyřízený (v paměti, localStorage i Firestore).
+ * Zajišťuje, že se připomenutí už NIKDY znovu nevygeneruje ani po smazání z inboxu či restartu aplikace.
+ */
+export const markNotificationKeyAsHandled = async (userEmail: string, notificationKey: string): Promise<void> => {
+  if (!userEmail || !notificationKey) return;
+  const emailKey = userEmail.toLowerCase();
+  const cacheKey = `${emailKey}___${notificationKey}`;
+
+  // 1. In-memory Set
+  memoryHandledKeys.add(cacheKey);
+
+  // 2. localStorage
+  try {
+    const set = getStoredHandledKeys(emailKey);
+    set.add(notificationKey);
+    const arr = Array.from(set).slice(-500);
+    localStorage.setItem(HANDLED_KEYS_STORAGE_PREFIX + emailKey, JSON.stringify(arr));
+  } catch (e) {
+    console.warn('Chyba při zápisu handled notification keys do localStorage:', e);
+  }
+
+  // 3. Firestore (trvalé centrální úložiště)
+  try {
+    const docId = getHandledDocId(emailKey, notificationKey);
+    await setDoc(doc(db, 'handled_reminders', docId), {
+      userEmail: emailKey,
+      notificationKey,
+      handledAt: new Date().toISOString(),
+    }, { merge: true });
+  } catch (e) {
+    console.warn('Chyba při zápisu do handled_reminders:', e);
+  }
+};
+
+/**
+ * Zkontroluje, zda již byl daný klíč připomenutí vyřízen, odeslán nebo uživatelem smazán.
+ */
+export const isNotificationKeyHandled = async (userEmail: string, notificationKey: string): Promise<boolean> => {
+  if (!userEmail || !notificationKey) return false;
+  const emailKey = userEmail.toLowerCase();
+  const cacheKey = `${emailKey}___${notificationKey}`;
+
+  // 1. Rychlá paměťová kontrola
+  if (memoryHandledKeys.has(cacheKey)) return true;
+
+  // 2. Lokální úložiště zařízení
+  const localSet = getStoredHandledKeys(emailKey);
+  if (localSet.has(notificationKey)) {
+    memoryHandledKeys.add(cacheKey);
+    return true;
+  }
+
+  // 3. Firestore handled_reminders (přetrvá i po smazání notifikace uživatelem z inboxu)
+  try {
+    const docId = getHandledDocId(emailKey, notificationKey);
+    const snap = await getDoc(doc(db, 'handled_reminders', docId));
+    if (snap.exists()) {
+      memoryHandledKeys.add(cacheKey);
+      localSet.add(notificationKey);
+      localStorage.setItem(HANDLED_KEYS_STORAGE_PREFIX + emailKey, JSON.stringify(Array.from(localSet).slice(-500)));
+      return true;
+    }
+  } catch (e) {
+    console.warn('Chyba při čtení handled_reminders:', e);
+  }
+
+  // 4. Dotaz do existujících notifikací
+  try {
+    const q = query(
+      collection(db, 'notifications'),
+      where('userEmail', '==', userEmail),
+      where('notificationKey', '==', notificationKey)
+    );
+    const existing = await getDocs(q);
+    if (!existing.empty) {
+      memoryHandledKeys.add(cacheKey);
+      return true;
+    }
+  } catch (e) {
+    console.warn('Chyba při dotazu na notifications:', e);
+  }
+
+  return false;
+};
+
+/**
+ * Vytvoří novou notifikaci v databázi (s trvalou kontrolou proti duplicitě podle notificationKey).
  */
 export const createNotification = async (
   notif: Omit<NotificationItem, 'id' | 'read' | 'createdAt'> & { notificationKey?: string },
-  currentUserEmail?: string
+  currentUserEmail?: string,
+  options?: { showImmediateBrowserPush?: boolean }
 ): Promise<void> => {
   try {
     if (notif.notificationKey) {
-      // Kontrola, zda už notifikace se stejným klíčem neexistuje pro daného uživatele
-      const q = query(
-        collection(db, 'notifications'),
-        where('userEmail', '==', notif.userEmail),
-        where('notificationKey', '==', notif.notificationKey)
-      );
-      const existing = await getDocs(q);
-      if (!existing.empty) {
-        return; // Již bylo notifikováno
+      const alreadyHandled = await isNotificationKeyHandled(notif.userEmail, notif.notificationKey);
+      if (alreadyHandled) {
+        return; // Již bylo notifikováno nebo vyřízeno/smazáno
       }
     }
 
@@ -228,9 +335,13 @@ export const createNotification = async (
 
     const docRef = await addDoc(collection(db, 'notifications'), newDoc);
 
-    // Pokud je příjemcem právě přihlášený uživatel (např. automatické připomenutí docházky generované na zařízení),
-    // rovnou a bez zpoždění zobrazíme systémovou notifikaci
-    if (isCurrentRecipient) {
+    // Trvale zaregistrujeme klíč, aby se po smazání nebo restartu aplikace nikdy znovu nevytvořil
+    if (notif.notificationKey) {
+      await markNotificationKeyAsHandled(notif.userEmail, notif.notificationKey);
+    }
+
+    // Systémovou notifikaci zobrazíme pouze pokud je výslovně vyžádána pro reálný čas (ne při úvodní kontrole při startu)
+    if (isCurrentRecipient && options?.showImmediateBrowserPush) {
       showBrowserNotification(notif.title, notif.message, '/favicon.ico', {
         eventId: notif.eventId,
         teamId: notif.teamId,
@@ -455,7 +566,45 @@ export const getHoursUntilEvent = (eventDate: string, eventTime?: string): numbe
 };
 
 /**
- * Vyhodnotí a vygeneruje připomenutí nadcházejících událostí a výzvy k zadání docházky
+ * Zformátuje skutečný zbývající čas do začátku události do přirozeného českého textu
+ * Zabraňuje nesmyslným tvrzením typu "začíná za 24 hodin", když událost začíná za 3 hodiny.
+ */
+export const formatTimeUntilText = (hours: number): string => {
+  if (hours <= 0) return 'právě teď';
+  if (hours < 1) {
+    const mins = Math.max(1, Math.round(hours * 60));
+    return `za ${mins} min`;
+  }
+  const roundedHours = Math.round(hours);
+  if (roundedHours === 1) return 'za 1 hodinu';
+  if (roundedHours >= 2 && roundedHours <= 4) return `za ${roundedHours} hodiny`;
+  if (roundedHours >= 5 && roundedHours < 24) return `za ${roundedHours} hodin`;
+  const days = Math.round(roundedHours / 24);
+  if (days === 1) return 'zítra (za 24 hodin)';
+  return `za ${days} dny`;
+};
+
+/**
+ * Zformátuje počet zbývajících hodin pro výzvy k docházce
+ */
+export const formatHoursRemainingText = (hours: number): string => {
+  if (hours <= 0) return 'méně než 1 minuta';
+  if (hours < 1) {
+    const mins = Math.max(1, Math.round(hours * 60));
+    return `${mins} minut`;
+  }
+  const roundedHours = Math.round(hours);
+  if (roundedHours === 1) return '1 hodina';
+  if (roundedHours >= 2 && roundedHours <= 4) return `${roundedHours} hodiny`;
+  if (roundedHours >= 5 && roundedHours < 24) return `${roundedHours} hodin`;
+  const days = Math.round(roundedHours / 24);
+  return days === 1 ? '1 den (24 hodin)' : `${days} dny`;
+};
+
+/**
+ * Vyhodnotí a vygeneruje připomenutí nadcházejících událostí a výzvy k zadání docházky.
+ * Připomenutí jsou časově ohraničená, neodesílají se se zpožděním (např. 24h upozornění 3h před akcí)
+ * a po smazání či vyřízení se už nikdy znovu nezobrazují.
  */
 export const checkAndGenerateReminders = async (
   currentUser: UserProfile,
@@ -464,8 +613,6 @@ export const checkAndGenerateReminders = async (
   allUsers: UserProfile[]
 ) => {
   if (!currentUser || !currentUser.email) return;
-
-  const now = new Date();
 
   for (const event of events) {
     const team = teams.find((t) => t.id === event.teamId);
@@ -483,78 +630,110 @@ export const checkAndGenerateReminders = async (
     const userPrefs = getUserTeamNotificationPreferences(currentUser, team.id);
 
     // 1. KONTROLA VÝZVY K ZADÁNÍ DOCHÁZKY (Uživatelská notifikace)
-    // Pokud má uživatel zapnuto a zbývá méně než nastavený předstih (výchozí 24h)
-    if (userPrefs.attendanceReminderEnabled && hoursUntil <= (userPrefs.attendanceReminderHours || 24)) {
-      // Zjistíme, zda už uživatel zadal účast
-      const attKey = `att_rem_${event.id}_${currentUser.email}`;
-      
-      try {
-        const attQuery = query(
-          collection(db, 'events', event.id, 'attendance'),
-          where('userEmail', '==', currentUser.email)
-        );
-        const attDocs = await getDocs(attQuery);
-        
-        let hasAnswered = false;
-        if (!attDocs.empty) {
-          const record = attDocs.docs[0].data() as AttendanceRecord;
-          if (record && (record.status === 'YES' || record.status === 'MAYBE' || record.status === 'NO')) {
-            hasAnswered = true;
+    if (userPrefs.attendanceReminderEnabled) {
+      const attHours = userPrefs.attendanceReminderHours || 24;
+
+      // Výzva k docházce se aktivuje, pokud jsme v rámci nastaveného předstihu (např. <= 24h)
+      // a událost ještě nezačala (alespoň 15 minut do začátku)
+      if (hoursUntil <= attHours && hoursUntil > 0.25) {
+        const attKey = `att_rem_${event.id}_${currentUser.email}`;
+
+        // Zkontrolujeme, zda už tato výzva nebyla pro tuto událost odeslána nebo smazána uživatelem
+        const alreadyHandled = await isNotificationKeyHandled(currentUser.email, attKey);
+        if (!alreadyHandled) {
+          try {
+            const attQuery = query(
+              collection(db, 'events', event.id, 'attendance'),
+              where('userEmail', '==', currentUser.email)
+            );
+            const attDocs = await getDocs(attQuery);
+
+            let hasAnswered = false;
+            if (!attDocs.empty) {
+              const record = attDocs.docs[0].data() as AttendanceRecord;
+              if (record && (record.status === 'YES' || record.status === 'MAYBE' || record.status === 'NO')) {
+                hasAnswered = true;
+              }
+            }
+
+            if (hasAnswered) {
+              // Uživatel již účast zadal – trvale označíme jako vyřízené, aby se neověřovalo opakovaně
+              await markNotificationKeyAsHandled(currentUser.email, attKey);
+            } else {
+              // Uživatel dosud účast nezadal – vygenerujeme notifikaci s přesným aktuálním zbývajícím časem
+              const timeRemainingText = formatHoursRemainingText(hoursUntil);
+
+              await createNotification({
+                userEmail: currentUser.email,
+                teamId: team.id,
+                teamName: team.name,
+                eventId: event.id,
+                eventTitle: event.title,
+                type: 'ATTENDANCE_REMINDER',
+                title: `Zadejte účast: ${event.title}`,
+                message: `Do začátku akce v týmu ${team.name} zbývá ${timeRemainingText}. Stále jste nezadali svou účast.`,
+                notificationKey: attKey,
+              }, currentUser.email);
+            }
+          } catch (e) {
+            console.warn('Chyba při ověřování účasti pro notifikaci:', e);
           }
         }
-
-        // Pokud ještě účast NEZADAL, vytvoříme notifikaci
-        if (!hasAnswered) {
-          const hoursFormatted = Math.round(hoursUntil);
-          const timeText = hoursFormatted <= 1 ? 'méně než hodina' : `${hoursFormatted} hod.`;
-
-          await createNotification({
-            userEmail: currentUser.email,
-            teamId: team.id,
-            teamName: team.name,
-            eventId: event.id,
-            eventTitle: event.title,
-            type: 'ATTENDANCE_REMINDER',
-            title: `Zadejte účast: ${event.title}`,
-            message: `Do začátku akce v týmu ${team.name} zbývá ${timeText}. Stále jste nezadali svou účast.`,
-            notificationKey: attKey,
-          }, currentUser.email);
-        }
-      } catch (e) {
-        console.warn('Chyba při ověřování účasti pro notifikaci:', e);
       }
     }
 
     // 2. KONTROLA TÝMOVÝCH PŘIPOMENUTÍ ZADANÝCH TVŮRCEM UDÁLOSTI
     // (např. 24h, 2h předem)
     if (userPrefs.teamRemindersEnabled && event.reminders && event.reminders.length > 0) {
-      for (const reminderHours of event.reminders) {
-        // Pokud jsme v časovém okně tohoto připomenutí (např. <= 24h a > 0)
-        if (hoursUntil <= reminderHours) {
-          const teamRemKey = `team_rem_${event.id}_${reminderHours}_${currentUser.email}`;
+      // Seřadit připomenutí sestupně (např. 48, 24, 12, 4, 2, 1)
+      const sortedReminders = [...event.reminders].sort((a, b) => b - a);
 
-          let label = `${reminderHours} hod.`;
-          if (reminderHours >= 24) {
-            const days = Math.round(reminderHours / 24);
-            label = days === 1 ? '24 hodin' : `${days} dny`;
-          } else if (reminderHours === 1) {
-            label = '1 hodinu';
-          } else if (reminderHours < 1) {
-            label = `${Math.round(reminderHours * 60)} minut`;
-          }
+      for (let i = 0; i < sortedReminders.length; i++) {
+        const reminderHours = sortedReminders[i];
+        const nextCloserReminder = sortedReminders[i + 1] || 0;
 
-          await createNotification({
-            userEmail: currentUser.email,
-            teamId: team.id,
-            teamName: team.name,
-            eventId: event.id,
-            eventTitle: event.title,
-            type: 'TEAM_REMINDER',
-            title: `Připomenutí akce: ${event.title}`,
-            message: `Týmová událost v ${team.name} začíná za ${label} (${event.date} v ${event.time}).`,
-            notificationKey: teamRemKey,
-          }, currentUser.email);
+        // A) Čas tohoto připomenutí ještě nenastal
+        if (hoursUntil > reminderHours) {
+          continue;
         }
+
+        // B) Čas tohoto připomenutí již byl překonán dalším bližším připomenutím
+        // Pokud zbývá méně času, než je další bližší milník (např. zbývají 3h a další milník je 2h nebo začátek akce),
+        // staré 24h připomenutí je již neplatné a nesmí se odesílat!
+        if (hoursUntil <= nextCloserReminder) {
+          continue;
+        }
+
+        // C) Časová tolerance (catch-up okno):
+        // Zabráníme odeslání 24h připomenutí, pokud uživatel spustí aplikaci např. 3 hodiny před akcí.
+        const hoursSinceScheduled = reminderHours - hoursUntil;
+        const maxAllowedDelay = reminderHours >= 24 ? 3 : reminderHours >= 4 ? 1.5 : 0.5;
+        if (hoursSinceScheduled > maxAllowedDelay) {
+          continue; // Připomenutí je zastaralé (prošvihnuté)
+        }
+
+        const teamRemKey = `team_rem_${event.id}_${reminderHours}_${currentUser.email}`;
+
+        // D) Kontrola, zda už nebylo toto připomenutí vygenerováno, doručeno nebo uživatelem smazáno
+        const alreadyHandled = await isNotificationKeyHandled(currentUser.email, teamRemKey);
+        if (alreadyHandled) {
+          continue;
+        }
+
+        // E) Text se skutečným aktuálním časem (např. "za 2 hodiny", ne matoucí "za 24 hodin")
+        const timeUntilText = formatTimeUntilText(hoursUntil);
+
+        await createNotification({
+          userEmail: currentUser.email,
+          teamId: team.id,
+          teamName: team.name,
+          eventId: event.id,
+          eventTitle: event.title,
+          type: 'TEAM_REMINDER',
+          title: `Připomenutí akce: ${event.title}`,
+          message: `Týmová událost v ${team.name} začíná ${timeUntilText} (${event.date} v ${event.time}).`,
+          notificationKey: teamRemKey,
+        }, currentUser.email);
       }
     }
   }
@@ -604,10 +783,32 @@ export const markAllNotificationsAsRead = async (userEmail: string, notification
 };
 
 /**
- * Smaže notifikaci
+ * Smaže notifikaci z inboxu a trvale zajistí, že se už nikdy znovu nevygeneruje
  */
-export const deleteNotification = async (notificationId: string) => {
+export const deleteNotification = async (
+  notificationId: string,
+  userEmail?: string,
+  notificationKey?: string
+) => {
   try {
+    // 1. Zaznamenáme klíč notifikace do trvalé evidence vyřízených připomenutí
+    if (userEmail && notificationKey) {
+      await markNotificationKeyAsHandled(userEmail, notificationKey);
+    } else {
+      try {
+        const snap = await getDoc(doc(db, 'notifications', notificationId));
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data?.userEmail && data?.notificationKey) {
+            await markNotificationKeyAsHandled(data.userEmail, data.notificationKey);
+          }
+        }
+      } catch (e) {
+        console.warn('Chyba při zjišťování notificationKey před smazáním:', e);
+      }
+    }
+
+    // 2. Smažeme dokument z kolekce notifikací uživatele
     await deleteDoc(doc(db, 'notifications', notificationId));
   } catch (err) {
     console.error('Chyba při mazání notifikace:', err);
@@ -615,13 +816,21 @@ export const deleteNotification = async (notificationId: string) => {
 };
 
 /**
- * Smaže všechna oznámení uživatele
+ * Smaže všechna oznámení uživatele a zajistí, že žádná připomenutí se po restartu znovu neobjeví
  */
-export const clearAllNotifications = async (userEmail: string, notificationIds?: string[]) => {
+export const clearAllNotifications = async (
+  userEmail: string,
+  notificationItemsOrIds?: (NotificationItem | string)[]
+) => {
   try {
-    if (notificationIds && notificationIds.length > 0) {
-      const deletePromises = notificationIds.map((id) => deleteDoc(doc(db, 'notifications', id)));
-      await Promise.all(deletePromises);
+    if (notificationItemsOrIds && notificationItemsOrIds.length > 0) {
+      for (const item of notificationItemsOrIds) {
+        if (typeof item === 'string') {
+          await deleteNotification(item, userEmail);
+        } else {
+          await deleteNotification(item.id, item.userEmail || userEmail, item.notificationKey);
+        }
+      }
       return;
     }
 
@@ -629,8 +838,13 @@ export const clearAllNotifications = async (userEmail: string, notificationIds?:
     for (const email of emailsToQuery) {
       const q = query(collection(db, 'notifications'), where('userEmail', '==', email));
       const snapshot = await getDocs(q);
-      const deletePromises = snapshot.docs.map((d) => deleteDoc(doc(db, 'notifications', d.id)));
-      await Promise.all(deletePromises);
+      for (const d of snapshot.docs) {
+        const data = d.data();
+        if (data?.userEmail && data?.notificationKey) {
+          await markNotificationKeyAsHandled(data.userEmail, data.notificationKey);
+        }
+        await deleteDoc(doc(db, 'notifications', d.id));
+      }
     }
   } catch (err) {
     console.error('Chyba při čištění notifikací:', err);

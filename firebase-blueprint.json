@@ -68,6 +68,17 @@
         "notificationKey": { "type": "string" }
       },
       "required": ["userEmail", "type", "title", "message", "read", "createdAt"]
+    },
+    "handled_reminders": {
+      "title": "Zpracovaná připomenutí",
+      "description": "Historie vyřízených klíčů připomenutí pro zamezení opakovaného doručování po smazání",
+      "type": "object",
+      "properties": {
+        "userEmail": { "type": "string" },
+        "notificationKey": { "type": "string" },
+        "handledAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userEmail", "notificationKey", "handledAt"]
     }
   }
 }
