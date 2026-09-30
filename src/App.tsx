@@ -8,7 +8,8 @@ import {
   setDoc,
   onSnapshot,
   deleteDoc,
-  addDoc
+  addDoc,
+  updateDoc
 } from './lib/firebase';
 import { Header } from './components/Header';
 import { AuthModal } from './components/AuthModal';
@@ -21,18 +22,18 @@ import { NativeAppModal } from './components/NativeAppModal';
 import { EventCard } from './components/EventCard';
 import { BottomToolbar } from './components/BottomToolbar';
 import { isEventPast } from './utils/eventUtils';
-import { checkAndGenerateReminders, showBrowserNotification, sendEventCancelledNotifications } from './utils/notificationService';
+import { checkAndGenerateReminders, showBrowserNotification, sendEventCancelledNotifications, syncUpcomingNativeReminders } from './utils/notificationService';
 import { getMemberDisplayName } from './utils/userUtils';
 import { applyAppFontSize, getInitialFontSize } from './utils/fontSizeUtils';
-import { setupNativeStatusBar, initPushNotifications, setupAndroidBackButton } from './lib/capacitor';
+import { setupNativeStatusBar, initPushNotifications, setupAndroidBackButton, setupAppStateListener } from './lib/capacitor';
 import { Calendar, Plus, RefreshCw, ShieldAlert, Sparkles, Users, Key, Palette, History, ChevronDown, ChevronUp, LayoutDashboard, Bell } from 'lucide-react';
 
 const LOCAL_STORAGE_USER_KEY = 'sejdemese_active_user_email';
-const PUSHED_NOTIFICATIONS_STORAGE_KEY = 'sejdemese_pushed_notif_ids';
+const PUSHED_NOTIFICATIONS_STORAGE_PREFIX = 'sejdemese_pushed_notif_ids_';
 
-const getStoredPushedNotificationIds = (): Set<string> => {
+const getStoredPushedNotificationIds = (userEmail: string): Set<string> => {
   try {
-    const raw = localStorage.getItem(PUSHED_NOTIFICATIONS_STORAGE_KEY);
+    const raw = localStorage.getItem(`${PUSHED_NOTIFICATIONS_STORAGE_PREFIX}${userEmail.toLowerCase()}`);
     if (!raw) return new Set();
     const arr = JSON.parse(raw);
     return new Set(Array.isArray(arr) ? arr : []);
@@ -41,12 +42,12 @@ const getStoredPushedNotificationIds = (): Set<string> => {
   }
 };
 
-const markNotificationAsPushed = (id: string) => {
+const markNotificationAsPushed = (userEmail: string, id: string) => {
   try {
-    const current = getStoredPushedNotificationIds();
+    const current = getStoredPushedNotificationIds(userEmail);
     current.add(id);
-    const arr = Array.from(current).slice(-200);
-    localStorage.setItem(PUSHED_NOTIFICATIONS_STORAGE_KEY, JSON.stringify(arr));
+    const arr = Array.from(current).slice(-500);
+    localStorage.setItem(`${PUSHED_NOTIFICATIONS_STORAGE_PREFIX}${userEmail.toLowerCase()}`, JSON.stringify(arr));
   } catch {
     // ignore
   }
@@ -115,6 +116,17 @@ export default function App() {
 
     return () => cleanup();
   }, [showNativeAppModal, showUserProfileModal, showNotificationModal, teamModalMode, showCreateEventModal, editingEvent]);
+
+  // 0c2. Reakce na přechod aplikace do pozadí / popředí:
+  // Při přechodu do pozadí ihned aktualizujeme systémový rozvrh budoucích oznámení
+  useEffect(() => {
+    const cleanup = setupAppStateListener((isActive) => {
+      if (!isActive && currentUser && teams.length > 0 && allEvents.length > 0) {
+        syncUpcomingNativeReminders(currentUser, teams, allEvents);
+      }
+    });
+    return () => cleanup();
+  }, [currentUser, teams, allEvents]);
 
   // 0d. Inicializace a živá aplikace zvolené velikosti písma
   useEffect(() => {
@@ -269,7 +281,7 @@ export default function App() {
     const unsubscribe = onSnapshot(notificationsRef, (snapshot) => {
       const list: NotificationItem[] = [];
       const newIncomingToNotify: NotificationItem[] = [];
-      const storedPushedIds = getStoredPushedNotificationIds();
+      const storedPushedIds = getStoredPushedNotificationIds(currentUser.email);
 
       snapshot.forEach((docSnap) => {
         const data = docSnap.data() as NotificationItem;
@@ -277,24 +289,28 @@ export default function App() {
           const item = { id: docSnap.id, ...data };
           list.push(item);
 
-          // Pokud se nejedná o úvodní načtení (znovunačtení stránky) a notifikace je nová, nepřečtená a dosud nezobrazená
-          if (!isInitialNotificationLoad.current) {
-            const isKnown = prevNotificationIdsRef.current.has(docSnap.id) || storedPushedIds.has(docSnap.id);
-            const createdAtTime = data.createdAt ? new Date(data.createdAt).getTime() : 0;
-            const isFresh = createdAtTime >= sessionMountTimeRef.current - 15000;
+          // Zda je notifikace již známa nebo označena jako doručená/přečtená
+          const isKnown = prevNotificationIdsRef.current.has(docSnap.id) || storedPushedIds.has(docSnap.id) || !!data.pushed;
+          const createdAtTime = data.createdAt ? new Date(data.createdAt).getTime() : 0;
+          // Notifikace vytvořená až po startu této session
+          const isCreatedDuringSession = createdAtTime >= sessionMountTimeRef.current - 5000;
 
-            if (!isKnown && !data.read && isFresh) {
-              newIncomingToNotify.push(item);
-            }
+          // Push notifikaci vyvoláme pouze pokud:
+          // 1. Nejedná se o první načtení při spuštění aplikace
+          // 2. Notifikace dosud nebyla zobrazena (není known ani v paměti, ani v localStorage, ani v DB s pushed=true)
+          // 3. Notifikace je nepřečtená
+          // 4. Vznikla v reálném čase za běhu aktuální relace
+          if (!isInitialNotificationLoad.current && !isKnown && !data.read && isCreatedDuringSession) {
+            newIncomingToNotify.push(item);
           }
         }
       });
 
-      // Pokud se jedná o úvodní načtení historie po otevření/znovunačtení aplikace,
-      // uložíme všechny stávající notifikace do známých, aby se nespouštěla systémová upozornění
+      // Při úvodním načtení označíme všechny existující notifikace jako doručené v paměti i v localStorage,
+      // aby se při jakémkoliv dalším snapshotu nebo po restartu neopakovaly
       if (isInitialNotificationLoad.current) {
         list.forEach((item) => {
-          markNotificationAsPushed(item.id);
+          markNotificationAsPushed(currentUser.email, item.id);
         });
       }
 
@@ -304,7 +320,13 @@ export default function App() {
       // Pokud dorazila nová notifikace za běhu aplikace v reálném čase, zobrazíme systémovou notifikaci
       if (!isInitialNotificationLoad.current && newIncomingToNotify.length > 0) {
         newIncomingToNotify.forEach((newItem) => {
-          markNotificationAsPushed(newItem.id);
+          markNotificationAsPushed(currentUser.email, newItem.id);
+
+          // Také označíme pushed: true přímo v databázi, aby se neopakovala na žádném dalším zařízení ani po restartu
+          try {
+            updateDoc(doc(db, 'notifications', newItem.id), { pushed: true }).catch(() => {});
+          } catch {}
+
           showBrowserNotification(newItem.title, newItem.message, '/favicon.ico', {
             eventId: newItem.eventId,
             teamId: newItem.teamId,
@@ -337,6 +359,8 @@ export default function App() {
 
     const runCheck = () => {
       checkAndGenerateReminders(currentUser, teams, allEvents, allUsers);
+      // Naplánovat budoucí notifikace do operačního systému pro bezproblémové doručení i na pozadí / při uspané aplikaci
+      syncUpcomingNativeReminders(currentUser, teams, allEvents);
     };
 
     runCheck();

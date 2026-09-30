@@ -1,7 +1,7 @@
 import { db, collection, addDoc, doc, updateDoc, deleteDoc, getDocs, query, where } from '../lib/firebase';
 import { Event, Team, UserProfile, NotificationItem, AttendanceRecord } from '../types';
 import { isEventPast } from './eventUtils';
-import { isNative, scheduleNativeNotification } from '../lib/capacitor';
+import { isNative, scheduleNativeNotification, scheduleScheduledNativeNotification } from '../lib/capacitor';
 
 /**
  * Zjistí aktuální stav oprávnění k notifikacím (pro nativní aplikaci i webový prohlížeč)
@@ -196,9 +196,13 @@ export const getUserTeamNotificationPreferences = (user: UserProfile, teamId: st
 };
 
 /**
- * Vytvoří novou notifikaci v databázi (s kontrolou proti duplicitě podle notificationKey)
+ * Vytvoří novou notifikaci v databázi (s kontrolou proti duplicitě podle notificationKey).
+ * Pokud je notifikace určena pro aktuálně přihlášeného uživatele v popředí, rovnou vyvolá systémovou notifikaci.
  */
-export const createNotification = async (notif: Omit<NotificationItem, 'id' | 'read' | 'createdAt'> & { notificationKey?: string }): Promise<void> => {
+export const createNotification = async (
+  notif: Omit<NotificationItem, 'id' | 'read' | 'createdAt'> & { notificationKey?: string },
+  currentUserEmail?: string
+): Promise<void> => {
   try {
     if (notif.notificationKey) {
       // Kontrola, zda už notifikace se stejným klíčem neexistuje pro daného uživatele
@@ -213,13 +217,27 @@ export const createNotification = async (notif: Omit<NotificationItem, 'id' | 'r
       }
     }
 
+    const isCurrentRecipient = currentUserEmail && currentUserEmail.toLowerCase() === notif.userEmail.toLowerCase();
+
     const newDoc = {
       ...notif,
       read: false,
+      pushed: isCurrentRecipient ? true : false,
       createdAt: new Date().toISOString(),
     };
 
-    await addDoc(collection(db, 'notifications'), newDoc);
+    const docRef = await addDoc(collection(db, 'notifications'), newDoc);
+
+    // Pokud je příjemcem právě přihlášený uživatel (např. automatické připomenutí docházky generované na zařízení),
+    // rovnou a bez zpoždění zobrazíme systémovou notifikaci
+    if (isCurrentRecipient) {
+      showBrowserNotification(notif.title, notif.message, '/favicon.ico', {
+        eventId: notif.eventId,
+        teamId: notif.teamId,
+        tag: `sejdemese-${docRef.id}`,
+        url: window.location.origin,
+      });
+    }
   } catch (err) {
     console.error('Chyba při ukládání notifikace:', err);
   }
@@ -500,7 +518,7 @@ export const checkAndGenerateReminders = async (
             title: `Zadejte účast: ${event.title}`,
             message: `Do začátku akce v týmu ${team.name} zbývá ${timeText}. Stále jste nezadali svou účast.`,
             notificationKey: attKey,
-          });
+          }, currentUser.email);
         }
       } catch (e) {
         console.warn('Chyba při ověřování účasti pro notifikaci:', e);
@@ -535,7 +553,7 @@ export const checkAndGenerateReminders = async (
             title: `Připomenutí akce: ${event.title}`,
             message: `Týmová událost v ${team.name} začíná za ${label} (${event.date} v ${event.time}).`,
             notificationKey: teamRemKey,
-          });
+          }, currentUser.email);
         }
       }
     }
@@ -548,7 +566,7 @@ export const checkAndGenerateReminders = async (
 export const markNotificationAsRead = async (notificationId: string) => {
   try {
     const docRef = doc(db, 'notifications', notificationId);
-    await updateDoc(docRef, { read: true });
+    await updateDoc(docRef, { read: true, pushed: true });
   } catch (err) {
     console.error('Chyba při označení notifikace jako přečtené:', err);
   }
@@ -560,7 +578,9 @@ export const markNotificationAsRead = async (notificationId: string) => {
 export const markAllNotificationsAsRead = async (userEmail: string, notificationIds?: string[]) => {
   try {
     if (notificationIds && notificationIds.length > 0) {
-      const updatePromises = notificationIds.map((id) => updateDoc(doc(db, 'notifications', id), { read: true }));
+      const updatePromises = notificationIds.map((id) =>
+        updateDoc(doc(db, 'notifications', id), { read: true, pushed: true })
+      );
       await Promise.all(updatePromises);
       return;
     }
@@ -573,7 +593,9 @@ export const markAllNotificationsAsRead = async (userEmail: string, notification
         where('read', '==', false)
       );
       const snapshot = await getDocs(q);
-      const updatePromises = snapshot.docs.map((d) => updateDoc(doc(db, 'notifications', d.id), { read: true }));
+      const updatePromises = snapshot.docs.map((d) =>
+        updateDoc(doc(db, 'notifications', d.id), { read: true, pushed: true })
+      );
       await Promise.all(updatePromises);
     }
   } catch (err) {
@@ -612,5 +634,103 @@ export const clearAllNotifications = async (userEmail: string, notificationIds?:
     }
   } catch (err) {
     console.error('Chyba při čištění notifikací:', err);
+  }
+};
+
+/**
+ * Stabilní hashovací funkce pro převod řetězce (klíče notifikace) na 32bitové celé číslo pro ID notifikace
+ */
+const hashStringTo32BitInt = (str: string): number => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash |= 0;
+  }
+  return Math.abs(hash) % 2147483647;
+};
+
+/**
+ * Naplánuje dopředu budoucí nativní notifikace do operačního systému (Android / iOS).
+ * Díky tomu se upozornění na blížící se událost nebo výzva k zadání docházky doručí
+ * PŘESNĚ V DANÝ ČAS, i když je aplikace kompletně zavřená na pozadí nebo je telefon uspaný.
+ */
+export const syncUpcomingNativeReminders = async (
+  currentUser: UserProfile,
+  teams: Team[],
+  events: Event[]
+) => {
+  if (!isNative || !currentUser?.email || events.length === 0) return;
+
+  const nowMs = Date.now();
+
+  for (const event of events) {
+    const team = teams.find((t) => t.id === event.teamId);
+    if (!team) continue;
+
+    const isMember = team.memberEmails.some((e) => e.toLowerCase() === currentUser.email.toLowerCase());
+    if (!isMember) continue;
+
+    const timeStr = event.time && event.time.includes(':') ? event.time : '00:00';
+    const eventTimeMs = new Date(`${event.date}T${timeStr}:00`).getTime();
+    if (isNaN(eventTimeMs) || eventTimeMs <= nowMs) continue;
+
+    const userPrefs = getUserTeamNotificationPreferences(currentUser, team.id);
+
+    // 1. Týmová připomenutí (např. 24h, 2h, 1h před začátkem události)
+    if (userPrefs.teamRemindersEnabled && event.reminders && event.reminders.length > 0) {
+      for (const hoursBefore of event.reminders) {
+        const fireTimeMs = eventTimeMs - hoursBefore * 60 * 60 * 1000;
+        // Plánujeme pouze časy, které jsou v budoucnosti (alespoň 10 sekund od nynějška)
+        if (fireTimeMs > nowMs + 10000) {
+          let label = `${hoursBefore} hod.`;
+          if (hoursBefore >= 24) {
+            const days = Math.round(hoursBefore / 24);
+            label = days === 1 ? '24 hodin' : `${days} dny`;
+          } else if (hoursBefore === 1) {
+            label = '1 hodinu';
+          } else if (hoursBefore < 1) {
+            label = `${Math.round(hoursBefore * 60)} minut`;
+          }
+
+          const notifKey = `native_rem_${event.id}_${hoursBefore}_${currentUser.email}`;
+          const notifId = hashStringTo32BitInt(notifKey);
+
+          await scheduleScheduledNativeNotification({
+            id: notifId,
+            title: `Připomenutí akce: ${event.title}`,
+            body: `Týmová událost v ${team.name} začíná za ${label} (${event.date} v ${event.time}).`,
+            scheduledAt: new Date(fireTimeMs),
+            data: {
+              eventId: event.id,
+              teamId: team.id,
+              type: 'TEAM_REMINDER',
+            },
+          });
+        }
+      }
+    }
+
+    // 2. Výzva k zadání docházky (např. 24h před začátkem události)
+    if (userPrefs.attendanceReminderEnabled) {
+      const hoursBefore = userPrefs.attendanceReminderHours || 24;
+      const fireTimeMs = eventTimeMs - hoursBefore * 60 * 60 * 1000;
+      if (fireTimeMs > nowMs + 10000) {
+        const attKey = `native_att_${event.id}_${hoursBefore}_${currentUser.email}`;
+        const notifId = hashStringTo32BitInt(attKey);
+
+        await scheduleScheduledNativeNotification({
+          id: notifId,
+          title: `Zadejte účast: ${event.title}`,
+          body: `Do začátku akce v týmu ${team.name} zbývá ${hoursBefore} hod. Stále jste nezadali svou účast.`,
+          scheduledAt: new Date(fireTimeMs),
+          data: {
+            eventId: event.id,
+            teamId: team.id,
+            type: 'ATTENDANCE_REMINDER',
+          },
+        });
+      }
+    }
   }
 };

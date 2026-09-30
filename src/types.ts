@@ -94,6 +94,7 @@ export interface NotificationItem {
   title: string;
   message: string;
   read: boolean;
+  pushed?: boolean; // Zda již byla pro tuto notifikaci odeslána systémová/nativní push notifikace
   createdAt: string;
   notificationKey?: string; // Unikátní klíč zabraňující duplicitnímu vygenerování
 }

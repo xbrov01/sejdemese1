@@ -221,6 +221,82 @@ export async function scheduleNativeNotification(options: {
 }
 
 /**
+ * Naplánuje lokální notifikaci na konkrétní budoucí čas (funguje spolehlivě v pozadí i při uspané aplikaci na Android/iOS)
+ */
+export async function scheduleScheduledNativeNotification(options: {
+  title: string;
+  body: string;
+  id: number;
+  scheduledAt: Date;
+  data?: any;
+}): Promise<boolean> {
+  if (!isNative) return false;
+
+  try {
+    let perm = await LocalNotifications.checkPermissions();
+    if (perm.display !== 'granted') {
+      perm = await LocalNotifications.requestPermissions();
+      if (perm.display !== 'granted') return false;
+    }
+
+    if (Capacitor.getPlatform() === 'android') {
+      try {
+        await LocalNotifications.createChannel({
+          id: 'sejdemese_notifications',
+          name: 'Oznámení Sejdeme se',
+          description: 'Upozornění na události, docházku a týmový chat',
+          importance: 5,
+          visibility: 1,
+          vibration: true,
+          lights: true,
+          lightColor: '#10B981',
+        });
+      } catch {
+        // Ignorovat, kanál již existuje
+      }
+    }
+
+    // Zrušit předchozí se stejným ID pokud existuje
+    try {
+      await LocalNotifications.cancel({ notifications: [{ id: options.id }] });
+    } catch {}
+
+    await LocalNotifications.schedule({
+      notifications: [
+        {
+          title: options.title,
+          body: options.body,
+          id: options.id,
+          schedule: { at: options.scheduledAt, allowWhileIdle: true },
+          channelId: 'sejdemese_notifications',
+          extra: options.data || null,
+          smallIcon: 'ic_stat_notification',
+          iconColor: '#10B981',
+        },
+      ],
+    });
+    return true;
+  } catch (err) {
+    console.error('[Capacitor] Chyba při plánování budoucí notifikace:', err);
+    return false;
+  }
+}
+
+/**
+ * Zruší naplánované notifikace podle ID
+ */
+export async function cancelScheduledNativeNotifications(ids: number[]): Promise<void> {
+  if (!isNative || ids.length === 0) return;
+  try {
+    await LocalNotifications.cancel({
+      notifications: ids.map((id) => ({ id })),
+    });
+  } catch (err) {
+    console.warn('[Capacitor] Chyba při rušení naplánovaných notifikací:', err);
+  }
+}
+
+/**
  * Nastaví nativní Status Bar na tmavý motiv odpovídající barvám aplikace
  */
 export async function setupNativeStatusBar(): Promise<void> {
@@ -249,6 +325,26 @@ export function setupAndroidBackButton(onBackAttempt: () => boolean): () => void
     if (!handled && !canGoBack) {
       App.exitApp();
     }
+  }).then((h) => {
+    handle = h;
+  });
+
+  return () => {
+    if (handle && typeof handle.remove === 'function') {
+      handle.remove();
+    }
+  };
+}
+
+/**
+ * Zaregistruje posluchač změny stavu aplikace (např. přechod do pozadí nebo obnovení na popředí)
+ */
+export function setupAppStateListener(onChange: (isActive: boolean) => void): () => void {
+  if (!isNative) return () => {};
+
+  let handle: any = null;
+  App.addListener('appStateChange', (state) => {
+    onChange(state.isActive);
   }).then((h) => {
     handle = h;
   });
