@@ -8,6 +8,8 @@ const uiColorSwiftPath = path.resolve(__dirname, '../node_modules/@capacitor/sta
 const pushPluginSwiftPath = path.resolve(__dirname, '../node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsPlugin.swift');
 const pushHandlerSwiftPath = path.resolve(__dirname, '../node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsHandler.swift');
 
+const localPluginSwiftPath = path.resolve(__dirname, '../node_modules/@capacitor/local-notifications/ios/Sources/LocalNotificationsPlugin/LocalNotificationsPlugin.swift');
+
 function patchStatusBarPlugin() {
   if (!fs.existsSync(pluginSwiftPath)) {
     console.log('[patch-plugins] StatusBarPlugin.swift not found at', pluginSwiftPath);
@@ -16,7 +18,6 @@ function patchStatusBarPlugin() {
 
   let content = fs.readFileSync(pluginSwiftPath, 'utf8');
 
-  // Check if already patched
   if (!content.includes('private func colorFromHex(')) {
     const helperCode = `
     private func colorFromHex(_ hex: String) -> UIColor? {
@@ -143,6 +144,26 @@ function patchPushNotificationsPlugin() {
 
   let content = fs.readFileSync(pushPluginSwiftPath, 'utf8');
 
+  // Provide local reject implementation on CAPPluginCall to guarantee resolution
+  if (!content.includes('fileprivate extension CAPPluginCall')) {
+    const rejectHelper = `
+fileprivate extension CAPPluginCall {
+    func reject(_ message: String) {
+        self.errorHandler(CAPPluginCallError(message: message, code: nil, error: nil, data: nil))
+    }
+
+    func reject(_ message: String, _ code: String? = nil, _ error: Error? = nil, _ data: [String: Any]? = nil) {
+        self.errorHandler(CAPPluginCallError(message: message, code: code, error: error, data: data))
+    }
+}
+`;
+    content = content.replace(
+      'enum PushNotificationError: Error {',
+      `${rejectHelper}
+enum PushNotificationError: Error {`
+    );
+  }
+
   // Replace call.getArray("notifications", JSObject.self) with options dictionary access
   content = content.replace(
     'guard let notifications = call.getArray("notifications", JSObject.self) else {',
@@ -219,8 +240,42 @@ function patchPushNotificationsHandler() {
   console.log('[patch-plugins] Successfully patched PushNotificationsHandler.swift');
 }
 
+function patchLocalNotificationsPlugin() {
+  if (!fs.existsSync(localPluginSwiftPath)) {
+    console.log('[patch-plugins] LocalNotificationsPlugin.swift not found at', localPluginSwiftPath);
+    return;
+  }
+
+  let content = fs.readFileSync(localPluginSwiftPath, 'utf8');
+
+  if (!content.includes('fileprivate extension CAPPluginCall')) {
+    const rejectHelper = `
+fileprivate extension CAPPluginCall {
+    func reject(_ message: String) {
+        self.errorHandler(CAPPluginCallError(message: message, code: nil, error: nil, data: nil))
+    }
+
+    func reject(_ message: String, _ code: String? = nil, _ error: Error? = nil, _ data: [String: Any]? = nil) {
+        self.errorHandler(CAPPluginCallError(message: message, code: code, error: error, data: data))
+    }
+}
+`;
+    content = content.replace(
+      'enum LocalNotificationsError: Error {',
+      `${rejectHelper}
+enum LocalNotificationsError: Error {`
+    );
+
+    fs.writeFileSync(localPluginSwiftPath, content, 'utf8');
+    console.log('[patch-plugins] Successfully patched LocalNotificationsPlugin.swift');
+  } else {
+    console.log('[patch-plugins] LocalNotificationsPlugin.swift already patched.');
+  }
+}
+
 patchStatusBarPlugin();
 patchStatusBar();
 patchUIColor();
 patchPushNotificationsPlugin();
 patchPushNotificationsHandler();
+patchLocalNotificationsPlugin();
