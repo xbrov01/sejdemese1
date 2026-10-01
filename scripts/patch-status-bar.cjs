@@ -145,30 +145,16 @@ function patchPushNotificationsPlugin() {
 
   let content = fs.readFileSync(pushPluginSwiftPath, 'utf8');
 
-  // Provide local reject implementation on CAPPluginCall to guarantee resolution across module boundaries
-  if (!content.includes('fileprivate extension CAPPluginCall')) {
-    const rejectHelper = `
-fileprivate extension CAPPluginCall {
-    func reject(_ message: String) {
-        self.errorHandler(CAPPluginCallError(message: message, code: nil, error: nil, data: nil))
-    }
-
-    func reject(_ message: String, _ code: String? = nil, _ error: Error? = nil, _ data: [String: Any]? = nil) {
-        self.errorHandler(CAPPluginCallError(message: message, code: code, error: error, data: data))
-    }
-}
-`;
-    content = content.replace(
-      'enum PushNotificationError: Error {',
-      `${rejectHelper}
-enum PushNotificationError: Error {`
-    );
-  }
-
   // Replace call.getArray("notifications", JSObject.self) with options dictionary access
   content = content.replace(
     'guard let notifications = call.getArray("notifications", JSObject.self) else {',
     'guard let notifications = (call.options["notifications"] as? [JSObject]) ?? (call.options["notifications"] as? [[String: Any]]) else {'
+  );
+
+  // Replace [String: Any] mapping with typed JSObject
+  content = content.replace(
+    'let ret = notifications.map({ (notification) -> [String: Any] in\n                return self.notificationDelegateHandler.makeNotificationRequestJSObject(notification.request)\n            })',
+    'let ret = notifications.map { self.notificationDelegateHandler.makeNotificationRequestJSObject($0.request) }'
   );
 
   // Replace UIApplication.shared.applicationIconBadgeNumber with iOS 16+ safe setBadgeCount
