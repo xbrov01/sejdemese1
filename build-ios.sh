@@ -53,6 +53,7 @@ else
   TARGET_ARG="-project ios/App/App.xcodeproj"
 fi
 
+set -o pipefail
 xcodebuild \
   $TARGET_ARG \
   -scheme App \
@@ -63,7 +64,11 @@ xcodebuild \
   ARCHS=arm64 \
   ONLY_ACTIVE_ARCH=YES \
   CODE_SIGNING_ALLOWED=NO \
-  CODE_SIGNING_REQUIRED=NO
+  CODE_SIGNING_REQUIRED=NO 2>&1 | tee xcodebuild.log || {
+    echo "=== BUILD FAILED. EXTRACTING COMPILER ERRORS ==="
+    grep -E "error:" xcodebuild.log || tail -n 100 xcodebuild.log
+    exit 1
+  }
 
 APP_PATH="$(find build/ios/Build/Products -name 'App.app' -type d | head -n 1)"
 

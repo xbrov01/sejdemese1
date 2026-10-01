@@ -6,9 +6,6 @@ const statusBarSwiftPath = path.resolve(__dirname, '../node_modules/@capacitor/s
 const uiColorSwiftPath = path.resolve(__dirname, '../node_modules/@capacitor/status-bar/ios/Sources/StatusBarPlugin/UIColor.swift');
 
 const pushPluginSwiftPath = path.resolve(__dirname, '../node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsPlugin.swift');
-const pushHandlerSwiftPath = path.resolve(__dirname, '../node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsHandler.swift');
-
-const localPluginSwiftPath = path.resolve(__dirname, '../node_modules/@capacitor/local-notifications/ios/Sources/LocalNotificationsPlugin/LocalNotificationsPlugin.swift');
 
 function patchStatusBarPlugin() {
   if (!fs.existsSync(pluginSwiftPath)) {
@@ -144,7 +141,7 @@ function patchPushNotificationsPlugin() {
 
   let content = fs.readFileSync(pushPluginSwiftPath, 'utf8');
 
-  // Provide local reject implementation on CAPPluginCall to guarantee resolution
+  // Provide local reject implementation on CAPPluginCall to guarantee resolution across module boundaries
   if (!content.includes('fileprivate extension CAPPluginCall')) {
     const rejectHelper = `
 fileprivate extension CAPPluginCall {
@@ -194,88 +191,7 @@ enum PushNotificationError: Error {`
   console.log('[patch-plugins] Successfully patched PushNotificationsPlugin.swift');
 }
 
-function patchPushNotificationsHandler() {
-  if (!fs.existsSync(pushHandlerSwiftPath)) {
-    console.log('[patch-plugins] PushNotificationsHandler.swift not found at', pushHandlerSwiftPath);
-    return;
-  }
-
-  let content = fs.readFileSync(pushHandlerSwiftPath, 'utf8');
-
-  // Explicit @objc on class and protocol methods for Swift 6
-  if (!content.includes('@objc(PushNotificationsHandler)')) {
-    content = content.replace(
-      'public class PushNotificationsHandler: NSObject, NotificationHandlerProtocol {',
-      '@objc(PushNotificationsHandler)\npublic class PushNotificationsHandler: NSObject, NotificationHandlerProtocol {'
-    );
-  }
-
-  if (!content.includes('@objc public func willPresent')) {
-    content = content.replace(
-      'public func willPresent(notification: UNNotification) -> UNNotificationPresentationOptions {',
-      '@objc public func willPresent(notification: UNNotification) -> UNNotificationPresentationOptions {'
-    );
-  }
-
-  if (!content.includes('@objc public func didReceive')) {
-    content = content.replace(
-      'public func didReceive(response: UNNotificationResponse) {',
-      '@objc public func didReceive(response: UNNotificationResponse) {'
-    );
-  }
-
-  // Replace getConfig().getArray with getConfigJSON()
-  content = content.replace(
-    'if let optionsArray = self.plugin?.getConfig().getArray("presentationOptions") as? [String] {',
-    'if let optionsArray = self.plugin?.getConfig().getConfigJSON()["presentationOptions"] as? [String] {'
-  );
-
-  // Replace JSTypes.coerceDictionaryToJSObject with standard dictionary cast
-  content = content.replace(
-    '"data": JSTypes.coerceDictionaryToJSObject(request.content.userInfo) ?? [:]',
-    '"data": (request.content.userInfo as? [String: Any]) ?? [:]'
-  );
-
-  fs.writeFileSync(pushHandlerSwiftPath, content, 'utf8');
-  console.log('[patch-plugins] Successfully patched PushNotificationsHandler.swift');
-}
-
-function patchLocalNotificationsPlugin() {
-  if (!fs.existsSync(localPluginSwiftPath)) {
-    console.log('[patch-plugins] LocalNotificationsPlugin.swift not found at', localPluginSwiftPath);
-    return;
-  }
-
-  let content = fs.readFileSync(localPluginSwiftPath, 'utf8');
-
-  if (!content.includes('fileprivate extension CAPPluginCall')) {
-    const rejectHelper = `
-fileprivate extension CAPPluginCall {
-    func reject(_ message: String) {
-        self.errorHandler(CAPPluginCallError(message: message, code: nil, error: nil, data: nil))
-    }
-
-    func reject(_ message: String, _ code: String? = nil, _ error: Error? = nil, _ data: [String: Any]? = nil) {
-        self.errorHandler(CAPPluginCallError(message: message, code: code, error: error, data: data))
-    }
-}
-`;
-    content = content.replace(
-      'enum LocalNotificationsError: Error {',
-      `${rejectHelper}
-enum LocalNotificationsError: Error {`
-    );
-
-    fs.writeFileSync(localPluginSwiftPath, content, 'utf8');
-    console.log('[patch-plugins] Successfully patched LocalNotificationsPlugin.swift');
-  } else {
-    console.log('[patch-plugins] LocalNotificationsPlugin.swift already patched.');
-  }
-}
-
 patchStatusBarPlugin();
 patchStatusBar();
 patchUIColor();
 patchPushNotificationsPlugin();
-patchPushNotificationsHandler();
-patchLocalNotificationsPlugin();

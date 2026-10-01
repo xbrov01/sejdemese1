@@ -70,6 +70,7 @@ jobs:
           fi
 
           echo "Compiling iOS App with target: $TARGET_ARG"
+          set -o pipefail
           xcodebuild \
             $TARGET_ARG \
             -scheme App \
@@ -80,7 +81,11 @@ jobs:
             ARCHS=arm64 \
             ONLY_ACTIVE_ARCH=YES \
             CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO
+            CODE_SIGNING_REQUIRED=NO 2>&1 | tee xcodebuild.log || {
+              echo "=== BUILD FAILED. EXTRACTING COMPILER ERRORS ==="
+              grep -E "error:" xcodebuild.log || tail -n 100 xcodebuild.log
+              exit 1
+            }
 
       - name: Compress iOS App Bundle
         run: |
