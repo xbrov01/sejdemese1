@@ -3,6 +3,7 @@ const path = require('path');
 
 const pluginSwiftPath = path.resolve(__dirname, '../node_modules/@capacitor/status-bar/ios/Sources/StatusBarPlugin/StatusBarPlugin.swift');
 const statusBarSwiftPath = path.resolve(__dirname, '../node_modules/@capacitor/status-bar/ios/Sources/StatusBarPlugin/StatusBar.swift');
+const uiColorSwiftPath = path.resolve(__dirname, '../node_modules/@capacitor/status-bar/ios/Sources/StatusBarPlugin/UIColor.swift');
 
 function patchStatusBarPlugin() {
   if (!fs.existsSync(pluginSwiftPath)) {
@@ -118,5 +119,30 @@ function patchStatusBar() {
   console.log('[patch-status-bar] Successfully patched StatusBar.swift');
 }
 
+function patchUIColor() {
+  if (!fs.existsSync(uiColorSwiftPath)) {
+    console.log('[patch-status-bar] UIColor.swift not found at', uiColorSwiftPath);
+    return;
+  }
+
+  let content = fs.readFileSync(uiColorSwiftPath, 'utf8');
+
+  if (content.includes('// Patched for SPM Capacitor 8 compatibility')) {
+    console.log('[patch-status-bar] UIColor.swift already patched.');
+    return;
+  }
+
+  const cleanContent = `// Patched for SPM Capacitor 8 compatibility
+import UIKit
+
+// CapacitorExtensionTypeWrapper is omitted in SPM builds of Capacitor 8.
+// Color hex parsing and formatting are implemented directly in StatusBar.swift and StatusBarPlugin.swift.
+`;
+
+  fs.writeFileSync(uiColorSwiftPath, cleanContent, 'utf8');
+  console.log('[patch-status-bar] Successfully patched UIColor.swift');
+}
+
 patchStatusBarPlugin();
 patchStatusBar();
+patchUIColor();
