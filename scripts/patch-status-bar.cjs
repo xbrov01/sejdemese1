@@ -6,6 +6,7 @@ const statusBarSwiftPath = path.resolve(__dirname, '../node_modules/@capacitor/s
 const uiColorSwiftPath = path.resolve(__dirname, '../node_modules/@capacitor/status-bar/ios/Sources/StatusBarPlugin/UIColor.swift');
 
 const pushPluginSwiftPath = path.resolve(__dirname, '../node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsPlugin.swift');
+const pushHandlerSwiftPath = path.resolve(__dirname, '../node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsHandler.swift');
 
 function patchStatusBarPlugin() {
   if (!fs.existsSync(pluginSwiftPath)) {
@@ -191,7 +192,57 @@ enum PushNotificationError: Error {`
   console.log('[patch-plugins] Successfully patched PushNotificationsPlugin.swift');
 }
 
+function patchPushNotificationsHandler() {
+  if (!fs.existsSync(pushHandlerSwiftPath)) {
+    console.log('[patch-plugins] PushNotificationsHandler.swift not found at', pushHandlerSwiftPath);
+    return;
+  }
+
+  let content = fs.readFileSync(pushHandlerSwiftPath, 'utf8');
+
+  // Replace getConfig().getArray with getConfigJSON()
+  content = content.replace(
+    'if let optionsArray = self.plugin?.getConfig().getArray("presentationOptions") as? [String] {',
+    'if let optionsArray = (self.plugin?.getConfig().getConfigJSON()["presentationOptions"] as? [String]) {'
+  );
+
+  // Replace JSTypes.coerceDictionaryToJSObject with safe dictionary mapping
+  const oldMakeNotification = `    func makeNotificationRequestJSObject(_ request: UNNotificationRequest) -> JSObject {
+        return [
+            "id": request.identifier,
+            "title": request.content.title,
+            "subtitle": request.content.subtitle,
+            "badge": request.content.badge ?? 1,
+            "body": request.content.body,
+            "data": JSTypes.coerceDictionaryToJSObject(request.content.userInfo) ?? [:]
+        ]
+    }`;
+
+  const newMakeNotification = `    func makeNotificationRequestJSObject(_ request: UNNotificationRequest) -> JSObject {
+        var dataDict: [String: Any] = [:]
+        for (k, v) in request.content.userInfo {
+            if let strKey = k as? String {
+                dataDict[strKey] = v
+            }
+        }
+        return [
+            "id": request.identifier,
+            "title": request.content.title,
+            "subtitle": request.content.subtitle,
+            "badge": request.content.badge ?? 1,
+            "body": request.content.body,
+            "data": dataDict
+        ]
+    }`;
+
+  content = content.replace(oldMakeNotification, newMakeNotification);
+
+  fs.writeFileSync(pushHandlerSwiftPath, content, 'utf8');
+  console.log('[patch-plugins] Successfully patched PushNotificationsHandler.swift');
+}
+
 patchStatusBarPlugin();
 patchStatusBar();
 patchUIColor();
 patchPushNotificationsPlugin();
+patchPushNotificationsHandler();
