@@ -14,13 +14,9 @@ function patchStatusBarPlugin() {
   let content = fs.readFileSync(pluginSwiftPath, 'utf8');
 
   // Check if already patched
-  if (content.includes('private func colorFromHex(')) {
-    console.log('[patch-status-bar] StatusBarPlugin.swift already patched.');
-    return;
-  }
-
-  // Helper method for hex color conversion
-  const helperCode = `
+  if (!content.includes('private func colorFromHex(')) {
+    // Helper method for hex color conversion
+    const helperCode = `
     private func colorFromHex(_ hex: String) -> UIColor? {
         var hexSanitized = hex.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "#", with: "")
         if hexSanitized.count == 6 {
@@ -36,16 +32,16 @@ function patchStatusBarPlugin() {
     }
 `;
 
-  // Insert helper method before private func statusBarConfig()
-  content = content.replace(
-    'private func statusBarConfig() -> StatusBarConfig {',
-    `${helperCode}
+    // Insert helper method before private func statusBarConfig()
+    content = content.replace(
+      'private func statusBarConfig() -> StatusBarConfig {',
+      `${helperCode}
     private func statusBarConfig() -> StatusBarConfig {`
-  );
+    );
 
-  // Replace statusBarConfig implementation to avoid missing PluginConfig members in SPM
-  const oldConfigPattern = /private func statusBarConfig\(\) -> StatusBarConfig \{[\s\S]*?return config\s*\}/;
-  const newConfigImplementation = `private func statusBarConfig() -> StatusBarConfig {
+    // Replace statusBarConfig implementation to avoid missing PluginConfig members in SPM
+    const oldConfigPattern = /private func statusBarConfig\(\) -> StatusBarConfig \{[\s\S]*?return config\s*\}/;
+    const newConfigImplementation = `private func statusBarConfig() -> StatusBarConfig {
         var config = StatusBarConfig()
         let json = getConfig().getConfigJSON()
         if let overlays = json["overlaysWebView"] as? Bool {
@@ -59,22 +55,25 @@ function patchStatusBarPlugin() {
         }
         return config
     }`;
-  content = content.replace(oldConfigPattern, newConfigImplementation);
+    content = content.replace(oldConfigPattern, newConfigImplementation);
 
-  // Replace UIColor.capacitor.color(fromHex: hexString) with colorFromHex(hexString)
-  content = content.replace(
-    'let color = UIColor.capacitor.color(fromHex: hexString)',
-    'let color = colorFromHex(hexString)'
-  );
+    // Replace UIColor.capacitor.color(fromHex: hexString) with colorFromHex(hexString)
+    content = content.replace(
+      'let color = UIColor.capacitor.color(fromHex: hexString)',
+      'let color = colorFromHex(hexString)'
+    );
 
-  // Replace call.getString("animation", "FADE")
-  content = content.replace(
-    /let animation = call\.getString\("animation", "FADE"\)/g,
-    'let animation = (call.options["animation"] as? String) ?? "FADE"'
-  );
+    // Replace call.getString("animation", "FADE")
+    content = content.replace(
+      /let animation = call\.getString\("animation", "FADE"\)/g,
+      'let animation = (call.options["animation"] as? String) ?? "FADE"'
+    );
 
-  fs.writeFileSync(pluginSwiftPath, content, 'utf8');
-  console.log('[patch-status-bar] Successfully patched StatusBarPlugin.swift');
+    fs.writeFileSync(pluginSwiftPath, content, 'utf8');
+    console.log('[patch-status-bar] Successfully patched StatusBarPlugin.swift');
+  } else {
+    console.log('[patch-status-bar] StatusBarPlugin.swift already patched.');
+  }
 }
 
 function patchStatusBar() {
@@ -85,20 +84,14 @@ function patchStatusBar() {
 
   let content = fs.readFileSync(statusBarSwiftPath, 'utf8');
 
-  // Check if already patched
-  if (content.includes('static func hexFromColor(')) {
-    console.log('[patch-status-bar] StatusBar.swift already patched.');
-    return;
-  }
+  // 1. Add hexFromColor if not present
+  if (!content.includes('static func hexFromColor(')) {
+    content = content.replace(
+      'color: UIColor.capacitor.hex(fromColor: backgroundColor),',
+      'color: StatusBar.hexFromColor(backgroundColor),'
+    );
 
-  // Replace UIColor.capacitor.hex(fromColor: backgroundColor)
-  content = content.replace(
-    'color: UIColor.capacitor.hex(fromColor: backgroundColor),',
-    'color: StatusBar.hexFromColor(backgroundColor),'
-  );
-
-  // Add hexFromColor static method inside class StatusBar
-  const hexHelper = `
+    const hexHelper = `
     static func hexFromColor(_ color: UIColor) -> String {
         var r: CGFloat = 0
         var g: CGFloat = 0
@@ -109,11 +102,30 @@ function patchStatusBar() {
     }
 `;
 
-  content = content.replace(
-    'private var bridge: CAPBridgeProtocol',
-    `${hexHelper}
+    content = content.replace(
+      'private var bridge: CAPBridgeProtocol',
+      `${hexHelper}
     private var bridge: CAPBridgeProtocol`
-  );
+    );
+  }
+
+  // 2. Fix object: .none, queue: .none for Swift 6 / Xcode 16 compatibility
+  content = content.replace(/object:\s*\.none,\s*queue:\s*\.none/g, 'object: nil, queue: nil');
+
+  // 3. Fix [self] in DispatchQueue.main.asyncAfter in show() for Swift 6 Sendable closure
+  const oldShowAsync = /DispatchQueue\.main\.asyncAfter\(deadline:\s*\.now\(\)\s*\+\s*0\.1\)\s*\{\s*\[self\]\s*in[\s\S]*?backgroundView\?\.isHidden\s*=\s*false\s*\}/;
+  const newShowAsync = `DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+                guard let self = self else { return }
+                self.resizeWebView()
+                if !self.isOverlayingWebview {
+                    self.resizeStatusBarBackgroundView()
+                    if let bgView = self.backgroundView {
+                        self.bridge.webView?.superview?.addSubview(bgView)
+                    }
+                }
+                self.backgroundView?.isHidden = false
+            }`;
+  content = content.replace(oldShowAsync, newShowAsync);
 
   fs.writeFileSync(statusBarSwiftPath, content, 'utf8');
   console.log('[patch-status-bar] Successfully patched StatusBar.swift');
@@ -125,18 +137,12 @@ function patchUIColor() {
     return;
   }
 
-  let content = fs.readFileSync(uiColorSwiftPath, 'utf8');
-
-  if (content.includes('// Patched for SPM Capacitor 8 compatibility')) {
-    console.log('[patch-status-bar] UIColor.swift already patched.');
-    return;
-  }
-
   const cleanContent = `// Patched for SPM Capacitor 8 compatibility
 import UIKit
 
-// CapacitorExtensionTypeWrapper is omitted in SPM builds of Capacitor 8.
-// Color hex parsing and formatting are implemented directly in StatusBar.swift and StatusBarPlugin.swift.
+extension UIColor {
+    internal static let capacitorStatusBarPatched = true
+}
 `;
 
   fs.writeFileSync(uiColorSwiftPath, cleanContent, 'utf8');

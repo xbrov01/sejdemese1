@@ -15,8 +15,8 @@ fi
 export PATH="$SCRIPT_DIR/node_modules/.bin:$PATH"
 
 npm run build
-node scripts/patch-status-bar.cjs
 npx cap sync ios
+node scripts/patch-status-bar.cjs
 
 echo "=== 2. Verifying iOS Build Environment ==="
 OS_TYPE="$(uname -s)"

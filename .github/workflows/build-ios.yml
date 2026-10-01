@@ -36,6 +36,7 @@ jobs:
             npx cap add ios
           fi
           npx cap sync ios
+          node scripts/patch-status-bar.cjs
 
       - name: Select Xcode & Verify Environment
         run: |
