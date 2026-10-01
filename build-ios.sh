@@ -15,6 +15,7 @@ fi
 export PATH="$SCRIPT_DIR/node_modules/.bin:$PATH"
 
 npm run build
+node scripts/patch-status-bar.cjs
 npx cap sync ios
 
 echo "=== 2. Verifying iOS Build Environment ==="
@@ -53,6 +54,7 @@ xcodebuild \
   -sdk iphonesimulator \
   -derivedDataPath build/ios \
   clean build \
+  ONLY_ACTIVE_ARCH=YES \
   CODE_SIGNING_ALLOWED=NO \
   CODE_SIGNING_REQUIRED=NO
 
