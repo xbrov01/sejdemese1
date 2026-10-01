@@ -28,12 +28,46 @@ jobs:
           cache: 'gradle'
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
+        run: |
+          if [ -d "/usr/local/lib/android/sdk" ]; then
+            SDK_ROOT="/usr/local/lib/android/sdk"
+          elif [ -d "$HOME/android-sdk" ]; then
+            SDK_ROOT="$HOME/android-sdk"
+          else
+            SDK_ROOT="$HOME/android-sdk"
+          fi
+          echo "ANDROID_HOME=$SDK_ROOT" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> $GITHUB_ENV
 
-      - name: Accept Android SDK Licenses
-        run: yes | sdkmanager --licenses || true
+          # Detect or install sdkmanager
+          SDK_BIN=""
+          for p in "$SDK_ROOT/cmdline-tools/latest/bin" "$SDK_ROOT/cmdline-tools/16.0/bin" "$SDK_ROOT/cmdline-tools/bin" "$SDK_ROOT/platform-tools"; do
+            if [ -d "$p" ]; then
+              echo "$p" >> $GITHUB_PATH
+              if [ -x "$p/sdkmanager" ]; then
+                SDK_BIN="$p/sdkmanager"
+              fi
+            fi
+          done
+
+          if [ -z "$SDK_BIN" ]; then
+            echo "Installing Android cmdline-tools..."
+            mkdir -p "$SDK_ROOT/cmdline-tools"
+            wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O /tmp/cmdline-tools.zip
+            mkdir -p /tmp/cmdline-temp
+            unzip -q /tmp/cmdline-tools.zip -d /tmp/cmdline-temp
+            mkdir -p "$SDK_ROOT/cmdline-tools/latest"
+            mv /tmp/cmdline-temp/cmdline-tools/* "$SDK_ROOT/cmdline-tools/latest/"
+            rm -rf /tmp/cmdline-temp /tmp/cmdline-tools.zip
+            SDK_BIN="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+            echo "$SDK_ROOT/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          fi
+
+          echo "Accepting Android SDK licenses..."
+          yes | "$SDK_BIN" --licenses || true
+
+          echo "Installing Android SDK platforms and build-tools..."
+          "$SDK_BIN" "platform-tools" "platforms;android-35" "build-tools;35.0.0" || true
 
       - name: Install Dependencies
         run: npm ci || npm install
