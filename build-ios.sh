@@ -47,13 +47,20 @@ xcodebuild -version
 echo "=== 3. Compiling iOS App for Simulator (Debug) ==="
 mkdir -p build/ios
 
+if [ -d "ios/App/App.xcworkspace" ]; then
+  TARGET_ARG="-workspace ios/App/App.xcworkspace"
+else
+  TARGET_ARG="-project ios/App/App.xcodeproj"
+fi
+
 xcodebuild \
-  -workspace ios/App/App.xcworkspace \
+  $TARGET_ARG \
   -scheme App \
   -configuration Debug \
-  -sdk iphonesimulator \
+  -destination "generic/platform=iOS Simulator" \
   -derivedDataPath build/ios \
   clean build \
+  ARCHS=arm64 \
   ONLY_ACTIVE_ARCH=YES \
   CODE_SIGNING_ALLOWED=NO \
   CODE_SIGNING_REQUIRED=NO

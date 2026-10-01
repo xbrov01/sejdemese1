@@ -132,21 +132,12 @@ function patchStatusBar() {
 }
 
 function patchUIColor() {
-  if (!fs.existsSync(uiColorSwiftPath)) {
-    console.log('[patch-status-bar] UIColor.swift not found at', uiColorSwiftPath);
-    return;
+  if (fs.existsSync(uiColorSwiftPath)) {
+    fs.unlinkSync(uiColorSwiftPath);
+    console.log('[patch-status-bar] Removed redundant UIColor.swift');
+  } else {
+    console.log('[patch-status-bar] UIColor.swift already removed.');
   }
-
-  const cleanContent = `// Patched for SPM Capacitor 8 compatibility
-import UIKit
-
-extension UIColor {
-    internal static let capacitorStatusBarPatched = true
-}
-`;
-
-  fs.writeFileSync(uiColorSwiftPath, cleanContent, 'utf8');
-  console.log('[patch-status-bar] Successfully patched UIColor.swift');
 }
 
 patchStatusBarPlugin();
