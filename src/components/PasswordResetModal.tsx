@@ -64,11 +64,11 @@ export const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden text-slate-900 border border-slate-200">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 overflow-hidden overscroll-contain">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden text-slate-900 border border-slate-200 my-auto flex flex-col max-h-[92vh] sm:max-h-[88vh] animate-in fade-in zoom-in-95 duration-150">
         
         {/* Header */}
-        <div className="bg-white p-6 text-center relative border-b border-slate-150">
+        <div className="bg-white p-5 sm:p-6 text-center relative border-b border-slate-150 shrink-0">
           <div className="w-12 h-12 bg-amber-50 text-amber-600 border border-amber-200 rounded-2xl flex items-center justify-center mx-auto mb-3">
             <KeyRound className="w-6 h-6" />
           </div>
@@ -79,7 +79,7 @@ export const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-6 bg-white">
+        <div className="p-5 sm:p-6 bg-white overflow-y-auto overscroll-contain flex-1">
           {currentUser.tempPassword && (
             <div className="mb-4 p-3 bg-amber-50 border border-amber-200 text-amber-900 text-xs rounded-xl flex items-start space-x-2">
               <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />

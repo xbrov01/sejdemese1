@@ -4,6 +4,7 @@ import { db, collection, addDoc, doc, updateDoc } from '../lib/firebase';
 import { Calendar, Clock, MapPin, Plus, X, Tag, Users, Bell, Pencil, Check, AlignLeft } from 'lucide-react';
 import { sendEventCreatedNotifications, sendEventUpdatedNotifications } from '../utils/notificationService';
 import { getMemberDisplayName } from '../utils/userUtils';
+import { isUserTeamAdmin } from '../utils/superUserUtils';
 
 interface CreateEventModalProps {
   currentUser: UserProfile;
@@ -28,9 +29,8 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
 }) => {
   const isEditing = Boolean(eventToEdit);
 
-  const [selectedTeamId, setSelectedTeamId] = useState<string>(
-    eventToEdit?.teamId || activeTeam?.id || teams[0]?.id || ''
-  );
+  const targetTeam = eventToEdit ? (teams.find((t) => t.id === eventToEdit.teamId) || activeTeam) : activeTeam;
+
   const [title, setTitle] = useState(eventToEdit?.title || '');
   const [description, setDescription] = useState(eventToEdit?.description || '');
   const [date, setDate] = useState(() => {
@@ -47,8 +47,6 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const targetTeam = teams.find((t) => t.id === selectedTeamId) || activeTeam;
-
   const toggleReminderOption = (hours: number) => {
     if (selectedReminders.includes(hours)) {
       setSelectedReminders(selectedReminders.filter((h) => h !== hours));
@@ -61,6 +59,10 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
     e.preventDefault();
     if (!targetTeam?.id) {
       setError('Vyberte prosím tým pro událost.');
+      return;
+    }
+    if (!isUserTeamAdmin(currentUser, targetTeam)) {
+      setError('Pouze správce týmu může vytvářet nebo upravovat události.');
       return;
     }
     if (!title.trim() || !date || !time) {
@@ -149,11 +151,11 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden text-slate-900">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 overflow-hidden overscroll-contain">
+      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full my-auto max-h-[92vh] sm:max-h-[88vh] flex flex-col overflow-hidden text-slate-900 animate-in fade-in zoom-in-95 duration-150">
         
-        {/* Header */}
-        <div className="bg-slate-50 px-6 py-4 text-slate-900 flex items-center justify-between border-b border-slate-200">
+        {/* Header - Pinned at Top */}
+        <div className="bg-slate-50 px-5 sm:px-6 py-4 text-slate-900 flex items-center justify-between border-b border-slate-200 shrink-0">
           <div className="flex items-center space-x-2">
             {isEditing ? (
               <Pencil className="w-5 h-5 text-emerald-600" />
@@ -174,34 +176,22 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
           </button>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        {/* Scrollable Form Body */}
+        <form id="create-event-form" onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4 overflow-y-auto overscroll-contain flex-1">
           {error && (
             <div className="p-3 bg-rose-50 text-rose-700 border border-rose-200 text-xs rounded-xl font-medium">
               {error}
             </div>
           )}
 
-          {/* Team selector if multiple teams available and not editing */}
-          {teams.length > 1 && !isEditing && (
-            <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Tým
-              </label>
-              <div className="relative">
-                <Users className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                <select
-                  value={selectedTeamId}
-                  onChange={(e) => setSelectedTeamId(e.target.value)}
-                  className="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 text-slate-900 rounded-xl text-sm border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none"
-                >
-                  {teams.map((t) => (
-                    <option key={t.id} value={t.id} className="bg-white text-slate-900">
-                      {t.name} (#{t.code})
-                    </option>
-                  ))}
-                </select>
-              </div>
+          {/* Informace o týmu (pevně svázáno s kartou týmu) */}
+          {targetTeam && (
+            <div className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
+              <span className="text-slate-500 font-bold uppercase tracking-wider text-[10px]">Tým události</span>
+              <span className="font-bold text-slate-900 flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-emerald-600" />
+                {targetTeam.name}
+              </span>
             </div>
           )}
 
@@ -330,34 +320,36 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
               })}
             </div>
           </div>
-
-          <div className="pt-3 flex items-center space-x-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 font-bold rounded-xl transition text-sm cursor-pointer border border-slate-200"
-            >
-              Zrušit
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 font-black rounded-xl shadow-xs text-sm transition flex items-center justify-center space-x-1.5 cursor-pointer disabled:opacity-50"
-            >
-              {isEditing ? (
-                <>
-                  <Check className="w-4 h-4" />
-                  <span>{loading ? 'Ukládání...' : 'Uložit'}</span>
-                </>
-              ) : (
-                <>
-                  <Plus className="w-4 h-4 stroke-[3]" />
-                  <span>{loading ? 'Vytváření...' : 'Vytvořit událost'}</span>
-                </>
-              )}
-            </button>
-          </div>
         </form>
+
+        {/* Action Buttons - Pinned at Bottom */}
+        <div className="px-5 sm:px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center space-x-3 shrink-0">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 py-2.5 bg-white hover:bg-slate-100 active:bg-slate-200 text-slate-700 font-bold rounded-xl transition text-sm cursor-pointer border border-slate-200 shadow-2xs"
+          >
+            Zrušit
+          </button>
+          <button
+            type="submit"
+            form="create-event-form"
+            disabled={loading}
+            className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 font-black rounded-xl shadow-xs text-sm transition flex items-center justify-center space-x-1.5 cursor-pointer disabled:opacity-50"
+          >
+            {isEditing ? (
+              <>
+                <Check className="w-4 h-4" />
+                <span>{loading ? 'Ukládání...' : 'Uložit'}</span>
+              </>
+            ) : (
+              <>
+                <Plus className="w-4 h-4 stroke-[3]" />
+                <span>{loading ? 'Vytváření...' : 'Vytvořit událost'}</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );

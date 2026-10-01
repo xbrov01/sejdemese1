@@ -169,8 +169,8 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4">
-      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden text-slate-900 animate-in fade-in zoom-in duration-150">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 overflow-hidden overscroll-contain">
+      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full my-auto max-h-[92vh] sm:max-h-[88vh] flex flex-col overflow-hidden text-slate-900 animate-in fade-in zoom-in-95 duration-150">
         
         {/* Modal Header */}
         <div className="bg-slate-50 px-5 py-4 text-slate-900 flex items-center justify-between shrink-0 border-b border-slate-200">
@@ -345,7 +345,7 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
         </div>
 
         {/* Notification List Body */}
-        <div className="flex-1 overflow-y-auto divide-y divide-slate-100 p-2 sm:p-3 space-y-1 bg-white">
+        <div className="flex-1 overflow-y-auto overscroll-contain divide-y divide-slate-100 p-2 sm:p-3 space-y-1 bg-white">
           {filteredNotifications.length === 0 ? (
             <div className="py-12 text-center text-slate-400">
               <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3 text-slate-400">

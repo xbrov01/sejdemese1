@@ -118,6 +118,32 @@ export default function App() {
     return () => cleanup();
   }, [showNativeAppModal, showUserProfileModal, showNotificationModal, teamModalMode, showCreateEventModal, editingEvent]);
 
+  // 0c1. Zámek posouvání hlavní obrazovky při otevřeném jakémkoliv modálním okně
+  // Zabraňuje rolování stránky na pozadí a eliminuje duplicitní posuvníky
+  const isAnyModalOpen = Boolean(
+    showNativeAppModal ||
+    showUserProfileModal ||
+    showNotificationModal ||
+    teamModalMode ||
+    showCreateEventModal ||
+    editingEvent ||
+    !currentUser ||
+    currentUser?.requirePasswordReset
+  );
+
+  useEffect(() => {
+    if (isAnyModalOpen) {
+      const originalBodyOverflow = document.body.style.overflow;
+      const originalHtmlOverflow = document.documentElement.style.overflow;
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalBodyOverflow;
+        document.documentElement.style.overflow = originalHtmlOverflow;
+      };
+    }
+  }, [isAnyModalOpen]);
+
   // 0c2. Reakce na přechod aplikace do pozadí / popředí:
   // Při přechodu do pozadí ihned aktualizujeme systémový rozvrh budoucích oznámení
   useEffect(() => {
@@ -586,8 +612,8 @@ export default function App() {
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
-                    {/* Rychlý přepínač týmu */}
-                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full no-scrollbar">
+                    {/* Rychlý přepínač týmu - spojitý flow bez scrollbaru */}
+                    <div className="flex flex-wrap items-center gap-1.5">
                       <span className="text-[11px] font-semibold text-slate-500 mr-1 hidden sm:inline">
                         Přejít na tým:
                       </span>
@@ -598,7 +624,7 @@ export default function App() {
                             key={t.id}
                             type="button"
                             onClick={() => setActiveTeamId(t.id)}
-                            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 text-xs rounded-xl font-bold transition shrink-0 cursor-pointer shadow-2xs border border-slate-200 flex items-center gap-1.5"
+                            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 text-xs rounded-xl font-bold transition cursor-pointer shadow-2xs border border-slate-200 flex items-center gap-1.5"
                           >
                             <span>{t.name}</span>
                             {upcomingCount > 0 && (
@@ -636,17 +662,9 @@ export default function App() {
                       V žádném z vašich týmů zatím nejsou naplánovány žádné nadcházející tréninky ani zápasy.
                     </p>
 
-                    {isCurrentTeamAdmin ? (
-                      <button
-                        onClick={() => setShowCreateEventModal(true)}
-                        className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 font-black rounded-xl text-xs inline-flex items-center space-x-2 shadow-xs transition cursor-pointer"
-                      >
-                        <Plus className="w-4 h-4 stroke-[3]" />
-                        <span>Vytvořit novou událost</span>
-                      </button>
-                    ) : (
+                    {isCurrentTeamAdmin && (
                       <p className="text-xs text-slate-500 italic">
-                        Nové události může vytvářet pouze Správce týmu.
+                        Pro přidání nové události otevřete kartu konkrétního týmu.
                       </p>
                     )}
                   </div>
@@ -698,15 +716,26 @@ export default function App() {
                       <span>← Zpět na Vše</span>
                     </button>
                     {isCurrentTeamAdmin && (
-                      <button
-                        type="button"
-                        onClick={() => setTeamModalMode('settings')}
-                        className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 text-xs font-bold rounded-xl flex items-center space-x-1.5 transition cursor-pointer border border-slate-200 shadow-2xs"
-                        title="Nastavení týmu, změna kódu a vzhledu událostí"
-                      >
-                        <Settings className="w-3.5 h-3.5 text-slate-600" />
-                        <span>Nastavení týmu</span>
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setTeamModalMode('settings')}
+                          className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 text-xs font-bold rounded-xl flex items-center space-x-1.5 transition cursor-pointer border border-slate-200 shadow-2xs"
+                          title="Nastavení týmu, změna kódu a vzhledu událostí"
+                        >
+                          <Settings className="w-3.5 h-3.5 text-slate-600" />
+                          <span>Nastavení týmu</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowCreateEventModal(true)}
+                          className="px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 text-xs font-black rounded-xl flex items-center space-x-1.5 transition cursor-pointer shadow-xs"
+                          title="Vytvořit novou událost pro tento tým"
+                        >
+                          <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                          <span>Nová událost</span>
+                        </button>
+                      </>
                     )}
                     {events.length === 0 && (
                       <button
@@ -742,19 +771,9 @@ export default function App() {
                         <h4 className="text-base font-bold text-slate-900">
                           Žádné nadcházející události
                         </h4>
-                        <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4">
+                        <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
                           V tomto týmu zatím nejsou naplánovány žádné nadcházející tréninky ani zápasy.
                         </p>
-
-                        {isCurrentTeamAdmin && (
-                          <button
-                            onClick={() => setShowCreateEventModal(true)}
-                            className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 font-black rounded-xl text-xs inline-flex items-center space-x-2 shadow-xs transition cursor-pointer"
-                          >
-                            <Plus className="w-4 h-4 stroke-[3]" />
-                            <span>Vytvořit novou událost</span>
-                          </button>
-                        )}
                       </div>
                     ) : (
                       <div className="space-y-6">
