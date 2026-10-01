@@ -41,4 +41,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         config.delegateClass = SceneDelegate.self
         return config
     }
+
+    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        NotificationCenter.default.post(name: Notification.Name("CapacitorDidRegisterForRemoteNotificationsNotification"), object: deviceToken)
+    }
+
+    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        NotificationCenter.default.post(name: Notification.Name("CapacitorDidFailToRegisterForRemoteNotificationsNotification"), object: error)
+    }
 }

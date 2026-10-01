@@ -8,6 +8,9 @@ const uiColorSwiftPath = path.resolve(__dirname, '../node_modules/@capacitor/sta
 const pushPluginSwiftPath = path.resolve(__dirname, '../node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsPlugin.swift');
 const pushHandlerSwiftPath = path.resolve(__dirname, '../node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsHandler.swift');
 
+const localPluginSwiftPath = path.resolve(__dirname, '../node_modules/@capacitor/local-notifications/ios/Sources/LocalNotificationsPlugin/LocalNotificationsPlugin.swift');
+const localHandlerSwiftPath = path.resolve(__dirname, '../node_modules/@capacitor/local-notifications/ios/Sources/LocalNotificationsPlugin/LocalNotificationsHandler.swift');
+
 function patchStatusBarPlugin() {
   if (!fs.existsSync(pluginSwiftPath)) {
     console.log('[patch-plugins] StatusBarPlugin.swift not found at', pluginSwiftPath);
@@ -206,8 +209,30 @@ function patchPushNotificationsHandler() {
     'if let optionsArray = (self.plugin?.getConfig().getConfigJSON()["presentationOptions"] as? [String]) {'
   );
 
-  // Replace JSTypes.coerceDictionaryToJSObject with safe dictionary mapping
-  const oldMakeNotification = `    func makeNotificationRequestJSObject(_ request: UNNotificationRequest) -> JSObject {
+  // Replace JSTypes.coerceDictionaryToJSObject with safe dictionary mapping matching JSObject typing
+  const newMakeNotification = `    func makeNotificationRequestJSObject(_ request: UNNotificationRequest) -> JSObject {
+        var dataDict: JSObject = [:]
+        for (k, v) in request.content.userInfo {
+            if let strKey = k as? String {
+                if let val = v as? JSValue {
+                    dataDict[strKey] = val
+                } else {
+                    dataDict[strKey] = "\\(v)"
+                }
+            }
+        }
+        return [
+            "id": request.identifier,
+            "title": request.content.title,
+            "subtitle": request.content.subtitle,
+            "badge": request.content.badge ?? 1,
+            "body": request.content.body,
+            "data": dataDict
+        ]
+    }`;
+
+  if (content.includes('JSTypes.coerceDictionaryToJSObject')) {
+    const oldMakeNotification = `    func makeNotificationRequestJSObject(_ request: UNNotificationRequest) -> JSObject {
         return [
             "id": request.identifier,
             "title": request.content.title,
@@ -217,8 +242,9 @@ function patchPushNotificationsHandler() {
             "data": JSTypes.coerceDictionaryToJSObject(request.content.userInfo) ?? [:]
         ]
     }`;
-
-  const newMakeNotification = `    func makeNotificationRequestJSObject(_ request: UNNotificationRequest) -> JSObject {
+    content = content.replace(oldMakeNotification, newMakeNotification);
+  } else if (content.includes('var dataDict: [String: Any] = [:]')) {
+    const prevMakeNotification = `    func makeNotificationRequestJSObject(_ request: UNNotificationRequest) -> JSObject {
         var dataDict: [String: Any] = [:]
         for (k, v) in request.content.userInfo {
             if let strKey = k as? String {
@@ -234,11 +260,103 @@ function patchPushNotificationsHandler() {
             "data": dataDict
         ]
     }`;
-
-  content = content.replace(oldMakeNotification, newMakeNotification);
+    content = content.replace(prevMakeNotification, newMakeNotification);
+  }
 
   fs.writeFileSync(pushHandlerSwiftPath, content, 'utf8');
   console.log('[patch-plugins] Successfully patched PushNotificationsHandler.swift');
+}
+
+function patchLocalNotificationsPlugin() {
+  if (!fs.existsSync(localPluginSwiftPath)) {
+    console.log('[patch-plugins] LocalNotificationsPlugin.swift not found at', localPluginSwiftPath);
+    return;
+  }
+
+  let content = fs.readFileSync(localPluginSwiftPath, 'utf8');
+
+  // Provide local getArray and getString on CAPPluginCall to guarantee resolution across module boundaries
+  if (!content.includes('fileprivate extension CAPPluginCall')) {
+    const helperCode = `
+fileprivate extension CAPPluginCall {
+    func getArray<T>(_ key: String, _ ofType: T.Type) -> [T]? {
+        return options[key] as? [T]
+    }
+
+    func getArray(_ key: String) -> [Any]? {
+        return options[key] as? [Any]
+    }
+
+    func getString(_ key: String) -> String? {
+        return options[key] as? String
+    }
+}
+`;
+    content = content.replace(
+      'enum LocalNotificationsError: Error {',
+      `${helperCode}
+enum LocalNotificationsError: Error {`
+    );
+
+    fs.writeFileSync(localPluginSwiftPath, content, 'utf8');
+    console.log('[patch-plugins] Successfully patched LocalNotificationsPlugin.swift');
+  } else {
+    console.log('[patch-plugins] LocalNotificationsPlugin.swift already patched.');
+  }
+}
+
+function patchLocalNotificationsHandler() {
+  if (!fs.existsSync(localHandlerSwiftPath)) {
+    console.log('[patch-plugins] LocalNotificationsHandler.swift not found at', localHandlerSwiftPath);
+    return;
+  }
+
+  let content = fs.readFileSync(localHandlerSwiftPath, 'utf8');
+
+  // Replace getConfig().getArray with getConfigJSON()
+  content = content.replace(
+    'if let optionsArray = self.plugin?.getConfig().getArray("presentationOptions") as? [String] {',
+    'if let optionsArray = (self.plugin?.getConfig().getConfigJSON()["presentationOptions"] as? [String]) {'
+  );
+
+  // Replace JSTypes.coerceDictionaryToJSObject with local helper
+  if (!content.includes('private func coerceDictionaryToJSObject(')) {
+    const helperMethod = `
+    private func coerceDictionaryToJSObject(_ dict: [AnyHashable: Any]?) -> JSObject? {
+        guard let dict = dict else { return nil }
+        var result: JSObject = [:]
+        for (k, v) in dict {
+            if let strKey = k as? String {
+                if let val = v as? JSValue {
+                    result[strKey] = val
+                } else if let subDict = v as? [AnyHashable: Any] {
+                    if let coerced = coerceDictionaryToJSObject(subDict) {
+                        result[strKey] = coerced
+                    }
+                } else {
+                    result[strKey] = "\\(v)"
+                }
+            }
+        }
+        return result
+    }
+`;
+    content = content.replace(
+      'public class LocalNotificationsHandler: NSObject, NotificationHandlerProtocol {',
+      `public class LocalNotificationsHandler: NSObject, NotificationHandlerProtocol {
+${helperMethod}`
+    );
+
+    content = content.replace(
+      'if let userInfo = JSTypes.coerceDictionaryToJSObject(request.content.userInfo) {',
+      'if let userInfo = self.coerceDictionaryToJSObject(request.content.userInfo) {'
+    );
+
+    fs.writeFileSync(localHandlerSwiftPath, content, 'utf8');
+    console.log('[patch-plugins] Successfully patched LocalNotificationsHandler.swift');
+  } else {
+    console.log('[patch-plugins] LocalNotificationsHandler.swift already patched.');
+  }
 }
 
 patchStatusBarPlugin();
@@ -246,3 +364,5 @@ patchStatusBar();
 patchUIColor();
 patchPushNotificationsPlugin();
 patchPushNotificationsHandler();
+patchLocalNotificationsPlugin();
+patchLocalNotificationsHandler();
