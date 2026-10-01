@@ -1,0 +1,292 @@
+name: Publish GitHub Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release Tag (e.g. v1.0.0)'
+        required: false
+        default: ''
+      draft:
+        description: 'Create draft release'
+        type: boolean
+        required: false
+        default: false
+      prerelease:
+        description: 'Mark as pre-release'
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Determine Release Tag
+        id: tag
+        run: |
+          if [ -n "${{ github.event.inputs.tag_name }}" ]; then
+            TAG="${{ github.event.inputs.tag_name }}"
+          elif [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+          else
+            TAG="v$(date +'%Y.%m.%d-%H%M')"
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Target Release Tag: $TAG"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Set up Java JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+          cache: 'gradle'
+
+      - name: Set up Android SDK
+        run: |
+          if [ -d "/usr/local/lib/android/sdk" ]; then
+            SDK_ROOT="/usr/local/lib/android/sdk"
+          elif [ -d "$HOME/android-sdk" ]; then
+            SDK_ROOT="$HOME/android-sdk"
+          else
+            SDK_ROOT="$HOME/android-sdk"
+          fi
+          echo "ANDROID_HOME=$SDK_ROOT" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> $GITHUB_ENV
+
+          SDK_BIN=""
+          for p in "$SDK_ROOT/cmdline-tools/latest/bin" "$SDK_ROOT/cmdline-tools/16.0/bin" "$SDK_ROOT/cmdline-tools/bin" "$SDK_ROOT/platform-tools"; do
+            if [ -d "$p" ]; then
+              echo "$p" >> $GITHUB_PATH
+              if [ -x "$p/sdkmanager" ]; then
+                SDK_BIN="$p/sdkmanager"
+              fi
+            fi
+          done
+
+          if [ -z "$SDK_BIN" ]; then
+            echo "Installing Android cmdline-tools..."
+            mkdir -p "$SDK_ROOT/cmdline-tools"
+            wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O /tmp/cmdline-tools.zip
+            mkdir -p /tmp/cmdline-temp
+            unzip -q /tmp/cmdline-tools.zip -d /tmp/cmdline-temp
+            mkdir -p "$SDK_ROOT/cmdline-tools/latest"
+            mv /tmp/cmdline-temp/cmdline-tools/* "$SDK_ROOT/cmdline-tools/latest/"
+            rm -rf /tmp/cmdline-temp /tmp/cmdline-tools.zip
+            SDK_BIN="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+            echo "$SDK_ROOT/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          fi
+
+          echo "Accepting Android SDK licenses..."
+          yes | "$SDK_BIN" --licenses || true
+
+          echo "Installing Android SDK platforms and build-tools..."
+          "$SDK_BIN" "platform-tools" "platforms;android-35" "build-tools;35.0.0" || true
+
+      - name: Install Dependencies
+        run: npm ci || npm install
+
+      - name: Build Web Assets
+        run: npm run build
+
+      - name: Sync Capacitor Android
+        run: npx cap sync android
+
+      - name: Make Gradle executable
+        run: chmod +x android/gradlew
+
+      - name: Build Debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Prepare APK for Release
+        run: |
+          mkdir -p release-assets
+          TAG="${{ steps.tag.outputs.tag }}"
+          cp android/app/build/outputs/apk/debug/app-debug.apk "release-assets/sejdemese-android-${TAG}.apk"
+          echo "Created release-assets/sejdemese-android-${TAG}.apk"
+
+      - name: Upload Android Release Asset
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-asset-android
+          path: release-assets/sejdemese-android-*.apk
+          retention-days: 1
+
+  build-ios:
+    name: Build iOS App
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Determine Release Tag
+        id: tag
+        run: |
+          if [ -n "${{ github.event.inputs.tag_name }}" ]; then
+            TAG="${{ github.event.inputs.tag_name }}"
+          elif [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+          else
+            TAG="v$(date +'%Y.%m.%d-%H%M')"
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Target Release Tag: $TAG"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci || npm install
+
+      - name: Build Web Assets
+        run: npm run build
+
+      - name: Sync Capacitor iOS
+        run: |
+          if [ ! -d "ios" ]; then
+            echo "iOS platform directory not found, adding with CocoaPods..."
+            npx cap add ios --packagemanager CocoaPods
+          fi
+          npx cap sync ios
+
+      - name: Select Xcode & Verify Environment
+        run: |
+          for xcode_path in /Applications/Xcode_16.2.app /Applications/Xcode_16.1.app /Applications/Xcode_16.0.app /Applications/Xcode_15.4.app /Applications/Xcode.app; do
+            if [ -d "$xcode_path" ]; then
+              echo "Selecting Xcode at $xcode_path"
+              sudo xcode-select -s "$xcode_path"
+              break
+            fi
+          done
+          echo "Active Xcode Version:"
+          xcodebuild -version
+
+      - name: Install CocoaPods Dependencies
+        run: |
+          cd ios/App
+          pod install --repo-update || pod install
+
+      - name: Build iOS App (Simulator Debug)
+        run: |
+          mkdir -p build/ios
+          if [ -d "ios/App/App.xcworkspace" ]; then
+            TARGET_ARG="-workspace ios/App/App.xcworkspace"
+          else
+            TARGET_ARG="-project ios/App/App.xcodeproj"
+          fi
+
+          echo "Compiling iOS App with target: $TARGET_ARG"
+          set -o pipefail
+          xcodebuild \
+            $TARGET_ARG \
+            -scheme App \
+            -configuration Debug \
+            -destination "generic/platform=iOS Simulator" \
+            -derivedDataPath build/ios \
+            clean build \
+            ARCHS=arm64 \
+            ONLY_ACTIVE_ARCH=YES \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO 2>&1 | tee xcodebuild.log || {
+              echo "=== BUILD FAILED. EXTRACTING COMPILER ERRORS ==="
+              grep -E "error:" xcodebuild.log || tail -n 100 xcodebuild.log
+              exit 1
+            }
+
+      - name: Compress iOS App Bundle
+        run: |
+          APP_PATH=$(find build/ios/Build/Products -name "App.app" -type d | head -n 1)
+          if [ -z "$APP_PATH" ]; then
+            echo "Error: App.app not found in build/ios/Build/Products"
+            find build/ios -maxdepth 4 -type d 2>/dev/null || true
+            exit 1
+          fi
+          echo "Found compiled App bundle at: $APP_PATH"
+          mkdir -p release-assets
+          TAG="${{ steps.tag.outputs.tag }}"
+          cd "$(dirname "$APP_PATH")"
+          zip -r -X "$GITHUB_WORKSPACE/release-assets/sejdemese-ios-simulator-${TAG}.zip" App.app
+
+      - name: Upload iOS Release Asset
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-asset-ios
+          path: release-assets/sejdemese-ios-simulator-*.zip
+          retention-days: 1
+
+  publish-github-release:
+    name: Publish to GitHub Releases
+    needs: [build-android, build-ios]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Determine Release Tag & Title
+        id: release_info
+        run: |
+          if [ -n "${{ github.event.inputs.tag_name }}" ]; then
+            TAG="${{ github.event.inputs.tag_name }}"
+          elif [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+          else
+            TAG="v$(date +'%Y.%m.%d-%H%M')"
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "title=Release $TAG" >> $GITHUB_OUTPUT
+
+      - name: Create Downloads Directory
+        run: mkdir -p dist-assets
+
+      - name: Download Android Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release-asset-android
+          path: dist-assets
+
+      - name: Download iOS Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release-asset-ios
+          path: dist-assets
+
+      - name: Inspect Release Assets
+        run: |
+          echo "Files to publish:"
+          ls -lh dist-assets/
+
+      - name: Create or Update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.release_info.outputs.tag }}
+          name: ${{ steps.release_info.outputs.title }}
+          draft: ${{ github.event.inputs.draft || false }}
+          prerelease: ${{ github.event.inputs.prerelease || false }}
+          generate_release_notes: true
+          files: |
+            dist-assets/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
