@@ -23,20 +23,16 @@ jobs:
       - name: Install Dependencies
         run: npm ci || npm install
 
-      - name: Patch Capacitor Status Bar Plugin (SPM compatibility)
-        run: node scripts/patch-status-bar.cjs
-
       - name: Build Web Assets
         run: npm run build
 
       - name: Sync Capacitor iOS
         run: |
           if [ ! -d "ios" ]; then
-            echo "iOS platform directory not found, adding..."
-            npx cap add ios
+            echo "iOS platform directory not found, adding with CocoaPods..."
+            npx cap add ios --packagemanager CocoaPods
           fi
           npx cap sync ios
-          node scripts/patch-status-bar.cjs
 
       - name: Select Xcode & Verify Environment
         run: |
@@ -50,15 +46,10 @@ jobs:
           echo "Active Xcode Version:"
           xcodebuild -version
 
-      - name: Install CocoaPods dependencies (if Podfile exists)
+      - name: Install CocoaPods Dependencies
         run: |
-          if [ -f ios/App/Podfile ]; then
-            echo "Podfile detected, running pod install..."
-            cd ios/App
-            pod install
-          else
-            echo "No Podfile detected, project uses Swift Package Manager (SPM)."
-          fi
+          cd ios/App
+          pod install --repo-update || pod install
 
       - name: Build iOS App (Simulator Debug)
         run: |
