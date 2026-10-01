@@ -21,50 +21,53 @@ jobs:
           cache: 'npm'
 
       - name: Install Dependencies
-        shell: bash
-        run: npm ci --include=optional
+        run: npm ci || npm install
 
       - name: Build Web Assets
         run: npm run build
 
-      - name: Initialize iOS Platform
-        shell: bash
+      - name: Sync Capacitor iOS
         run: |
-          if [ -d ios ] && [ ! -f ios/App/Podfile ]; then
-            echo "iOS directory exists but is incomplete; regenerating..."
-            rm -rf ios
-          fi
-
-          if [ ! -d ios ]; then
-            echo "Creating iOS platform..."
+          if [ ! -d "ios" ]; then
+            echo "iOS platform directory not found, adding..."
             npx cap add ios
           fi
+          npx cap sync ios
 
-          if [ ! -f ios/App/Podfile ]; then
-            echo "ERROR: Failed to create iOS platform"
-            find ios -maxdepth 4 -type f 2>/dev/null | sort
-            exit 1
-          fi
-
-      - name: Sync Capacitor
-        run: npx cap sync ios
-
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_15.4.app || sudo xcode-select -s /Applications/Xcode.app
-
-      - name: Install CocoaPods dependencies
-        working-directory: ios/App
-        run: pod install
-
-      - name: Verify iOS project
+      - name: Select Xcode & Verify Environment
         run: |
-          test -f ios/App/App.xcworkspace/contents.xcworkspacedata \
-            || { echo "Expected iOS workspace was not generated"; find ios -maxdepth 3 -type f | sort; exit 1; }
+          for xcode_path in /Applications/Xcode_16.2.app /Applications/Xcode_16.1.app /Applications/Xcode_16.0.app /Applications/Xcode_15.4.app /Applications/Xcode.app; do
+            if [ -d "$xcode_path" ]; then
+              echo "Selecting Xcode at $xcode_path"
+              sudo xcode-select -s "$xcode_path"
+              break
+            fi
+          done
+          echo "Active Xcode Version:"
+          xcodebuild -version
+
+      - name: Install CocoaPods dependencies (if Podfile exists)
+        run: |
+          if [ -f ios/App/Podfile ]; then
+            echo "Podfile detected, running pod install..."
+            cd ios/App
+            pod install
+          else
+            echo "No Podfile detected, project uses Swift Package Manager (SPM)."
+          fi
 
       - name: Build iOS App (Simulator Debug)
         run: |
+          mkdir -p build/ios
+          if [ -d "ios/App/App.xcworkspace" ]; then
+            TARGET_ARG="-workspace ios/App/App.xcworkspace"
+          else
+            TARGET_ARG="-project ios/App/App.xcodeproj"
+          fi
+
+          echo "Compiling iOS App with target: $TARGET_ARG"
           xcodebuild \
-            -workspace ios/App/App.xcworkspace \
+            $TARGET_ARG \
             -scheme App \
             -configuration Debug \
             -sdk iphonesimulator \
@@ -76,6 +79,12 @@ jobs:
       - name: Compress iOS App Bundle
         run: |
           APP_PATH=$(find build/ios/Build/Products -name "App.app" -type d | head -n 1)
+          if [ -z "$APP_PATH" ]; then
+            echo "Error: App.app not found in build/ios/Build/Products"
+            find build/ios -maxdepth 4 -type d 2>/dev/null || true
+            exit 1
+          fi
+          echo "Found compiled App bundle at: $APP_PATH"
           cd "$(dirname "$APP_PATH")"
           zip -r -X "$GITHUB_WORKSPACE/sejdemese-ios-simulator.zip" App.app
 
