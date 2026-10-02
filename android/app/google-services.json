@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "247696266737",
+    "project_id": "gen-lang-client-0627024616",
+    "storage_bucket": "gen-lang-client-0627024616.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:247696266737:android:e3285695b9e06f99f4e050",
+        "android_client_info": {
+          "package_name": "cz.sejdemese.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "247696266737-jvrlhknihhd566kqqul78c4pn5mc3vji.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCf5rJjYJmC1-j7cRGYUyNzq0uUPSMzAaQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "247696266737-jvrlhknihhd566kqqul78c4pn5mc3vji.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
