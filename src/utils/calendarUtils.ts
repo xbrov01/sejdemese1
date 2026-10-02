@@ -1,10 +1,25 @@
 import { Event, Team } from '../types';
 
 /**
- * Parses event date (YYYY-MM-DD) and time (HH:MM) into start and end Date objects.
- * Default duration is set to 90 minutes (typical match / training duration).
+ * Calculates default end time by adding durationMinutes (default 60 min = 1 hour) to startTime.
  */
-export function getEventDateRange(event: Event, durationMinutes = 90): { start: Date; end: Date } {
+export function calculateDefaultEndTime(startTime: string, durationMinutes = 60): string {
+  if (!startTime) return '19:00';
+  const parts = startTime.split(':');
+  const h = parseInt(parts[0], 10) || 0;
+  const m = parseInt(parts[1], 10) || 0;
+  const totalMinutes = (h * 60 + m + durationMinutes) % (24 * 60);
+  const endH = Math.floor(totalMinutes / 60);
+  const endM = totalMinutes % 60;
+  const pad = (n: number) => (n < 10 ? '0' + n : String(n));
+  return `${pad(endH)}:${pad(endM)}`;
+}
+
+/**
+ * Parses event date (YYYY-MM-DD), start time (HH:MM), and optional end time (HH:MM) into start and end Date objects.
+ * Default event duration is 1 hour (60 minutes).
+ */
+export function getEventDateRange(event: Event, durationMinutes = 60): { start: Date; end: Date } {
   const dateParts = event.date.split('-');
   const timeParts = event.time ? event.time.split(':') : ['18', '00'];
 
@@ -15,7 +30,22 @@ export function getEventDateRange(event: Event, durationMinutes = 90): { start: 
   const minutes = parseInt(timeParts[1], 10) || 0;
 
   const start = new Date(year, month, day, hours, minutes, 0, 0);
-  const end = new Date(start.getTime() + durationMinutes * 60 * 1000);
+
+  let end: Date;
+  if (event.endTime && event.endTime.includes(':')) {
+    const endParts = event.endTime.split(':');
+    const endHours = parseInt(endParts[0], 10) || 0;
+    const endMinutes = parseInt(endParts[1], 10) || 0;
+    end = new Date(year, month, day, endHours, endMinutes, 0, 0);
+
+    // If end time is before or equal to start time, it rolls over to the next day
+    if (end.getTime() <= start.getTime()) {
+      end = new Date(year, month, day + 1, endHours, endMinutes, 0, 0);
+    }
+  } else {
+    // Default duration is 1 hour (60 minutes)
+    end = new Date(start.getTime() + durationMinutes * 60 * 1000);
+  }
 
   return { start, end };
 }

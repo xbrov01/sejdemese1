@@ -56,7 +56,8 @@ export interface Event {
   title: string;
   description?: string;
   date: string; // YYYY-MM-DD
-  time: string; // HH:MM
+  time: string; // HH:MM (čas začátku)
+  endTime?: string; // HH:MM (čas konce - výchozí trvání 1 hodina)
   location: string;
   createdBy: string; // email
   createdAt?: string;

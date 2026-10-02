@@ -28,7 +28,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { COLOR_PRESETS, compressImageFile, hexToRgba, getContrastingTextColor, getSolidLighterShade, MAX_IMAGE_FILE_SIZE_BYTES, MAX_IMAGE_FILE_SIZE_LABEL } from '../utils/themePresets';
-import { isUserTeamAdmin, SYSTEM_SUPERUSER_EMAIL } from '../utils/superUserUtils';
+import { isUserTeamAdmin, isUserOnlyTeamAdmin, SYSTEM_SUPERUSER_EMAIL } from '../utils/superUserUtils';
 
 export type TeamModalMode = 'create' | 'join' | 'members' | 'settings';
 
@@ -323,6 +323,12 @@ export const TeamManagerModal: React.FC<TeamManagerModalProps> = ({
   // Správa členů
   const handleToggleMember = async (userEmail: string, isCurrentlyMember: boolean) => {
     if (!activeTeam) return;
+
+    if (isCurrentlyMember && isUserOnlyTeamAdmin({ email: userEmail }, activeTeam, allUsers)) {
+      setError('Nelze odebrat jediného správce týmu. Tým musí mít alespoň jednoho správce.');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -349,9 +355,15 @@ export const TeamManagerModal: React.FC<TeamManagerModalProps> = ({
   const handleToggleAdminPrivileges = async (targetUser: UserProfile, assignAdmin: boolean) => {
     if (!activeTeam) return;
 
-    if (!assignAdmin && targetUser.email.toLowerCase() === activeTeam.createdBy.toLowerCase()) {
-      setError('Nelze odebrat práva správce zakladateli týmu.');
-      return;
+    if (!assignAdmin) {
+      if (targetUser.email.toLowerCase() === activeTeam.createdBy.toLowerCase()) {
+        setError('Nelze odebrat práva správce zakladateli týmu.');
+        return;
+      }
+      if (isUserOnlyTeamAdmin(targetUser, activeTeam, allUsers)) {
+        setError('Nelze odebrat práva jedinému správci týmu. Tým musí mít alespoň jednoho správce.');
+        return;
+      }
     }
 
     setLoading(true);

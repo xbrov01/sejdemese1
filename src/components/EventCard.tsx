@@ -7,7 +7,8 @@ import {
   getGoogleCalendarUrl,
   getOutlookCalendarUrl,
   getYahooCalendarUrl,
-  downloadIcsFile
+  downloadIcsFile,
+  calculateDefaultEndTime
 } from '../utils/calendarUtils';
 import { hexToRgba, getContrastingTextColor, getSolidLighterShade } from '../utils/themePresets';
 import { isUserTeamAdmin } from '../utils/superUserUtils';
@@ -346,6 +347,7 @@ export const EventCard: React.FC<EventCardProps> = ({
 
   const dateInfo = formatCzechDateWithDay(event.date);
   const teamColor = activeTeam?.cardBgColor || '#059669';
+  const displayEndTime = event.endTime || calculateDefaultEndTime(event.time, 60);
 
   return (
     <div className={`bg-white rounded-2xl shadow-xs border border-slate-200/90 mb-5 transition relative overflow-hidden ${
@@ -374,7 +376,7 @@ export const EventCard: React.FC<EventCardProps> = ({
             onClick={() => setIsCardExpanded(!isCardExpanded)}
             title={isCardExpanded ? 'Kliknutím sbalíte kartu události' : 'Kliknutím rozbalíte všechny podrobnosti'}
           >
-            {/* Datum s dnem v týdnu - podbarvené plně neprůhledným (solid) světlým odstínem barvy týmu (nebo šedé pro uplynulé) */}
+            {/* Datum s dnem v týdnu a časem začátku - podbarvené plně neprůhledným (solid) světlým odstínem barvy týmu (nebo šedé pro uplynulé) */}
             <div
               className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-lg mb-1 border shadow-2xs ${
                 isPast
@@ -399,6 +401,15 @@ export const EventCard: React.FC<EventCardProps> = ({
                 <span className="sm:hidden">{dateInfo.shortLabel}</span>
                 <span className="hidden sm:inline">{dateInfo.fullLabel}</span>
               </span>
+              {event.time && (
+                <>
+                  <span className="opacity-40 font-normal">|</span>
+                  <span className="inline-flex items-center gap-1 font-bold">
+                    <Clock className="w-3 h-3 text-slate-500" />
+                    <span>{event.time}</span>
+                  </span>
+                </>
+              )}
             </div>
 
             {/* Indikace proběhlo přesunutá pod datum (plně neprůhledná) */}
@@ -467,10 +478,13 @@ export const EventCard: React.FC<EventCardProps> = ({
             {/* Druhý řádek: Čas, Kód týmu, Místo a Akční tlačítka kalendáře/editace/smazání */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
               <div className="flex flex-wrap items-center gap-2 text-xs">
-                {/* Čas události - plně neprůhledná pilulka */}
-                <div className="flex items-center space-x-1.5 font-bold text-slate-800 bg-white border border-slate-200 px-2.5 py-1 rounded-lg shadow-2xs">
+                {/* Čas události - plně neprůhledná pilulka se začátkem i koncem v rozbaleném detailu */}
+                <div
+                  className="flex items-center space-x-1.5 font-bold text-slate-800 bg-white border border-slate-200 px-2.5 py-1 rounded-lg shadow-2xs"
+                  title={`Čas konání: ${event.time} – ${displayEndTime}`}
+                >
                   <Clock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span>{event.time}</span>
+                  <span>{event.time} – {displayEndTime}</span>
                 </div>
                 
                 {/* Tým kód */}
@@ -534,7 +548,7 @@ export const EventCard: React.FC<EventCardProps> = ({
                           <span>Přidat do osobního kalendáře</span>
                         </div>
                         <p className="text-[11px] text-slate-500 mt-0.5">
-                          {event.title} • {event.time} ({formatCzechDate(event.date)})
+                          {event.title} • {event.time} – {displayEndTime} ({formatCzechDate(event.date)})
                         </p>
                       </div>
 

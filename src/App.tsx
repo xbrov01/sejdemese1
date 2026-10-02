@@ -1012,6 +1012,7 @@ export default function App() {
           currentUser={currentUser}
           activeTeam={activeTeam}
           teams={teams}
+          allUsers={allUsers}
           onClose={() => setShowUserProfileModal(false)}
           onOpenNativeAppModal={() => setShowNativeAppModal(true)}
           onSignOut={handleSignOut}

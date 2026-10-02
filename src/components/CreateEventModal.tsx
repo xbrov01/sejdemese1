@@ -5,6 +5,7 @@ import { Calendar, Clock, MapPin, Plus, X, Tag, Users, Bell, Pencil, Check, Alig
 import { sendEventCreatedNotifications, sendEventUpdatedNotifications } from '../utils/notificationService';
 import { getMemberDisplayName } from '../utils/userUtils';
 import { isUserTeamAdmin } from '../utils/superUserUtils';
+import { calculateDefaultEndTime } from '../utils/calendarUtils';
 
 interface CreateEventModalProps {
   currentUser: UserProfile;
@@ -39,6 +40,10 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
     return today.toISOString().split('T')[0];
   });
   const [time, setTime] = useState(eventToEdit?.time || '18:00');
+  const [endTime, setEndTime] = useState(
+    eventToEdit?.endTime || calculateDefaultEndTime(eventToEdit?.time || '18:00', 60)
+  );
+  const [isEndTimeCustomized, setIsEndTimeCustomized] = useState(Boolean(eventToEdit?.endTime));
   const [location, setLocation] = useState(eventToEdit?.location || '');
   const [selectedReminders, setSelectedReminders] = useState<number[]>(
     eventToEdit?.reminders || [24, 2]
@@ -46,6 +51,13 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const handleStartTimeChange = (newStartTime: string) => {
+    setTime(newStartTime);
+    if (!isEndTimeCustomized) {
+      setEndTime(calculateDefaultEndTime(newStartTime, 60));
+    }
+  };
 
   const toggleReminderOption = (hours: number) => {
     if (selectedReminders.includes(hours)) {
@@ -77,6 +89,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
       const editorDisplayName = getMemberDisplayName(currentUser.email, targetTeam, currentUser);
       const cleanLocation = location.trim();
       const cleanDescription = description.trim();
+      const finalEndTime = endTime.trim() || calculateDefaultEndTime(time, 60);
 
       if (isEditing && eventToEdit) {
         // Úprava existující události
@@ -86,6 +99,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
           description: cleanDescription,
           date,
           time,
+          endTime: finalEndTime,
           location: cleanLocation,
           reminders: selectedReminders,
         };
@@ -119,6 +133,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
           description: cleanDescription,
           date,
           time,
+          endTime: finalEndTime,
           location: cleanLocation,
           createdBy: currentUser.email,
           createdAt: new Date().toISOString(),
@@ -230,7 +245,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                 Datum
@@ -257,11 +272,82 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
                   type="time"
                   required
                   value={time}
-                  onChange={(e) => setTime(e.target.value)}
+                  onChange={(e) => handleStartTimeChange(e.target.value)}
                   className="w-full pl-9 pr-2 py-2.5 bg-slate-50 text-slate-900 rounded-xl text-sm border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none"
                 />
               </div>
             </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  Čas konce
+                </label>
+                <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
+                  výchozí 1h
+                </span>
+              </div>
+              <div className="relative">
+                <Clock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="time"
+                  required
+                  value={endTime}
+                  onChange={(e) => {
+                    setEndTime(e.target.value);
+                    setIsEndTimeCustomized(true);
+                  }}
+                  className="w-full pl-9 pr-2 py-2.5 bg-slate-50 text-slate-900 rounded-xl text-sm border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Rychlá volba trvání události */}
+          <div className="flex items-center gap-1.5 -mt-1 text-xs">
+            <span className="text-[11px] text-slate-500 font-medium">Trvání:</span>
+            <button
+              type="button"
+              onClick={() => {
+                setEndTime(calculateDefaultEndTime(time, 60));
+                setIsEndTimeCustomized(true);
+              }}
+              className={`px-2 py-0.5 rounded-lg text-[11px] font-bold transition border cursor-pointer ${
+                endTime === calculateDefaultEndTime(time, 60)
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-300 font-extrabold'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              1 hod (výchozí)
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setEndTime(calculateDefaultEndTime(time, 90));
+                setIsEndTimeCustomized(true);
+              }}
+              className={`px-2 py-0.5 rounded-lg text-[11px] font-bold transition border cursor-pointer ${
+                endTime === calculateDefaultEndTime(time, 90)
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-300 font-extrabold'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              1.5 hod
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setEndTime(calculateDefaultEndTime(time, 120));
+                setIsEndTimeCustomized(true);
+              }}
+              className={`px-2 py-0.5 rounded-lg text-[11px] font-bold transition border cursor-pointer ${
+                endTime === calculateDefaultEndTime(time, 120)
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-300 font-extrabold'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              2 hod
+            </button>
           </div>
 
           <div>

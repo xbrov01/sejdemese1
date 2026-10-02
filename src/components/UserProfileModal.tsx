@@ -4,14 +4,15 @@ import { db, doc, updateDoc, arrayRemove, arrayUnion } from '../lib/firebase';
 import { getMemberDisplayName } from '../utils/userUtils';
 import { getUserTeamNotificationPreferences, sendTestBrowserNotification } from '../utils/notificationService';
 import { FONT_SIZE_OPTIONS, applyAppFontSize, getInitialFontSize, saveFontSizePreference } from '../utils/fontSizeUtils';
-import { User, Tag, Check, X, Mail, Trash2, Sparkles, Building2, Bell, AlertCircle, MessageSquare, ChevronDown, ChevronUp, Smartphone, CalendarPlus, CalendarX, Pencil, Type, LogOut } from 'lucide-react';
+import { User, Tag, Check, X, Mail, Trash2, Sparkles, Building2, Bell, AlertCircle, MessageSquare, ChevronDown, ChevronUp, Smartphone, CalendarPlus, CalendarX, Pencil, Type, LogOut, ShieldAlert } from 'lucide-react';
 
-import { isUserSuperAdmin } from '../utils/superUserUtils';
+import { isUserSuperAdmin, isUserOnlyTeamAdmin } from '../utils/superUserUtils';
 
 interface UserProfileModalProps {
   currentUser: UserProfile;
   activeTeam: Team | null;
   teams: Team[];
+  allUsers?: UserProfile[];
   onClose: () => void;
   onUpdateUser: (updatedUser: UserProfile) => void;
   onUpdateTeamNickname?: (teamId: string, nickname: string) => void;
@@ -24,6 +25,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   currentUser,
   activeTeam,
   teams,
+  allUsers = [],
   onClose,
   onUpdateUser,
   onUpdateTeamNickname,
@@ -133,6 +135,12 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
   // Opuštění týmu uživatelem
   const handleConfirmLeaveTeam = async (teamToLeave: Team) => {
+    if (isUserOnlyTeamAdmin(currentUser, teamToLeave, allUsers)) {
+      setErrorMsg(`Nemůžete opustit tým „${teamToLeave.name}“, protože jste jeho jediným správcem. Před opuštěním jmenujte jiného člena správcem.`);
+      setTeamToLeaveConfirm(null);
+      return;
+    }
+
     setIsLeavingTeam(true);
     setErrorMsg(null);
     try {
@@ -613,21 +621,46 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                       </div>
 
                       {/* Tlačítko pro opuštění týmu */}
-                      <div className="mt-3 pt-2.5 border-t border-slate-200/80 flex items-center justify-between gap-2">
-                        <span className="text-[11px] text-slate-500">
-                          Již nechcete být členem tohoto týmu?
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setTeamToLeaveConfirm(team)}
-                          disabled={loading || isLeavingTeam}
-                          className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 active:bg-rose-200 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl transition cursor-pointer flex items-center space-x-1.5 shadow-2xs shrink-0 disabled:opacity-50"
-                          title={`Opustit tým ${team.name}`}
-                        >
-                          <LogOut className="w-3.5 h-3.5 text-rose-600" />
-                          <span>Opustit tým</span>
-                        </button>
-                      </div>
+                      {(() => {
+                        const isOnlyAdmin = isUserOnlyTeamAdmin(currentUser, team, allUsers);
+                        if (isOnlyAdmin) {
+                          return (
+                            <div className="mt-3 pt-2.5 border-t border-slate-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                              <div className="flex items-center gap-1.5 text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-1.5 rounded-xl text-[11px] font-medium leading-tight">
+                                <ShieldAlert className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                                <span>Jste jediným správcem tohoto týmu. Před opuštěním jmenujte dalšího správce.</span>
+                              </div>
+                              <button
+                                type="button"
+                                disabled
+                                className="px-3 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 text-xs font-bold rounded-xl flex items-center space-x-1.5 shadow-2xs shrink-0 cursor-not-allowed opacity-60"
+                                title="Jako jediný správce nemůžete tým opustit. Nejprve jmenujte jiného člena správcem."
+                              >
+                                <LogOut className="w-3.5 h-3.5" />
+                                <span>Opustit tým</span>
+                              </button>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div className="mt-3 pt-2.5 border-t border-slate-200/80 flex items-center justify-between gap-2">
+                            <span className="text-[11px] text-slate-500">
+                              Již nechcete být členem tohoto týmu?
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setTeamToLeaveConfirm(team)}
+                              disabled={loading || isLeavingTeam}
+                              className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 active:bg-rose-200 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl transition cursor-pointer flex items-center space-x-1.5 shadow-2xs shrink-0 disabled:opacity-50"
+                              title={`Opustit tým ${team.name}`}
+                            >
+                              <LogOut className="w-3.5 h-3.5 text-rose-600" />
+                              <span>Opustit tým</span>
+                            </button>
+                          </div>
+                        );
+                      })()}
 
                     </div>
                   );

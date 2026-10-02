@@ -48,3 +48,33 @@ export const isUserTeamAdmin = (
 
   return false;
 };
+
+/**
+ * Zjistí, zda je daný uživatel jediným správcem týmu.
+ * Pokud je uživatel jediným správcem, nesmí tým opustit bez předání role jinému členovi.
+ */
+export const isUserOnlyTeamAdmin = (
+  user?: Partial<UserProfile> | null,
+  team?: Partial<Team> | null,
+  allUsers?: UserProfile[]
+): boolean => {
+  if (!user || !user.email || !team) return false;
+  if (!isUserTeamAdmin(user, team)) return false;
+
+  const userEmailLower = user.email.toLowerCase().trim();
+  const memberEmails = team.memberEmails || [];
+
+  // Najít ostatní členy týmu, kteří mají roli správce tohoto týmu
+  const otherAdminEmails = memberEmails.filter((memberEmail) => {
+    const memberLower = memberEmail.toLowerCase().trim();
+    if (memberLower === userEmailLower) return false;
+
+    const memberProfile = allUsers?.find(
+      (u) => u.email.toLowerCase().trim() === memberLower
+    );
+
+    return isUserTeamAdmin(memberProfile || { email: memberEmail }, team);
+  });
+
+  return otherAdminEmails.length === 0;
+};
