@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { UserProfile } from '../types';
-import { db, doc, setDoc, getDoc } from '../lib/firebase';
+import { db, doc, setDoc, getDoc, auth, googleProvider, signInWithPopup } from '../lib/firebase';
 import { UserCheck, Shield, User, Mail, ArrowRight, Lock, UserPlus, LogIn } from 'lucide-react';
 import { SYSTEM_SUPERUSER_EMAIL, SYSTEM_SUPERUSER_DEFAULT_PASSWORDS, OWNER_SUPERUSER_EMAIL } from '../utils/superUserUtils';
 
@@ -15,7 +15,75 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onLoginSuccess }) => {
   const [email, setEmail] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Přihlášení / Registrace přes Google účet
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    setError(null);
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const googleUser = result.user;
+      if (!googleUser || !googleUser.email) {
+        throw new Error('Z Google účtu se nepodařilo získat e-mailovou adresu.');
+      }
+
+      const cleanEmail = googleUser.email.trim().toLowerCase();
+      const displayName = googleUser.displayName || cleanEmail.split('@')[0];
+      const isOwner = cleanEmail === OWNER_SUPERUSER_EMAIL.toLowerCase();
+
+      const userRef = doc(db, 'users', cleanEmail);
+      const userSnap = await getDoc(userRef);
+
+      if (!userSnap.exists()) {
+        const newUser: UserProfile = {
+          id: cleanEmail,
+          name: displayName,
+          email: cleanEmail,
+          role: isOwner ? 'admin' : 'member',
+          isSuperAdmin: isOwner ? true : undefined,
+          createdAt: new Date().toISOString(),
+          avatarUrl: googleUser.photoURL || undefined,
+          authProvider: 'google',
+        };
+        await setDoc(userRef, newUser);
+        onLoginSuccess(newUser);
+      } else {
+        const existingData = userSnap.data() as UserProfile;
+        if (isOwner) {
+          existingData.role = 'admin';
+          existingData.isSuperAdmin = true;
+        }
+        if (!existingData.avatarUrl && googleUser.photoURL) {
+          existingData.avatarUrl = googleUser.photoURL;
+        }
+        existingData.authProvider = existingData.authProvider || 'google';
+        await setDoc(userRef, existingData, { merge: true });
+        onLoginSuccess(existingData);
+      }
+    } catch (err: any) {
+      console.error('Chyba při přihlašování přes Google:', err);
+      if (err?.code === 'auth/popup-closed-by-user' || err?.code === 'auth/cancelled-popup-request') {
+        return;
+      }
+      if (err?.code === 'auth/popup-blocked') {
+        setError('Vyskakovací okno pro přihlášení bylo zablokováno prohlížečem. Povolte prosím vyskakovací okna pro tuto stránku.');
+        return;
+      }
+      if (err?.code === 'auth/unauthorized-domain') {
+        setError('Tato doména není povolena v autorizovaných doménách Firebase Authentication projektu. Přidejte ji prosím ve Firebase Console.');
+        return;
+      }
+      if (err?.code === 'auth/operation-not-allowed') {
+        setError('Přihlašování přes Google není v tomto Firebase projektu zatím povoleno. Povolte prosím Google provider ve Firebase Console (Authentication > Sign-in method).');
+        return;
+      }
+      setError(err?.message || 'Při přihlašování přes Google nastala chyba.');
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -214,6 +282,49 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onLoginSuccess }) => {
               {error}
             </div>
           )}
+
+          {/* Tlačítko přihlášení / registrace přes Google */}
+          <div className="mb-5">
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              disabled={loading || googleLoading}
+              className="w-full py-2.5 px-4 bg-white hover:bg-slate-50 active:bg-slate-100 border border-slate-300 text-slate-800 font-bold rounded-xl shadow-2xs text-xs sm:text-sm transition flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50"
+            >
+              {googleLoading ? (
+                <div className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                  <path
+                    fill="#4285F4"
+                    d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.35 24 12 24z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.17 0 9.97 0 12s.45 3.83 1.25 5.42l4.03-3.15z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.35 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+                  />
+                </svg>
+              )}
+              <span>{authMode === 'login' ? 'Pokračovat s Googlem' : 'Zaregistrovat se přes Google'}</span>
+            </button>
+
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-200" />
+              </div>
+              <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-wider">
+                <span className="bg-white px-2.5 text-slate-400">Nebo e-mailem</span>
+              </div>
+            </div>
+          </div>
 
           {authMode === 'login' ? (
             /* FORMULÁŘ PRO PŘIHLÁŠENÍ */

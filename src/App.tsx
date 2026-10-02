@@ -9,7 +9,9 @@ import {
   onSnapshot,
   deleteDoc,
   addDoc,
-  updateDoc
+  updateDoc,
+  auth,
+  fbSignOut
 } from './lib/firebase';
 import { Header } from './components/Header';
 import { AuthModal } from './components/AuthModal';
@@ -413,6 +415,7 @@ export default function App() {
 
   const handleSignOut = () => {
     localStorage.removeItem(LOCAL_STORAGE_USER_KEY);
+    fbSignOut(auth).catch(() => {});
     setCurrentUser(null);
     setShowAuthModal(true);
   };

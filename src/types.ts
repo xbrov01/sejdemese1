@@ -33,6 +33,8 @@ export interface UserProfile {
   notificationPreferences?: Record<string, TeamNotificationPreferences>; // teamId -> preferences
   fontSize?: AppFontSize; // 'standard' | 'large' | 'xlarge'
   deviceTokens?: DeviceTokenInfo[]; // Registrace FCM / APNS / Web tokenů pro nativní notifikace
+  avatarUrl?: string; // Profilová fotka z Google účtu
+  authProvider?: 'password' | 'google'; // Způsob registrace / přihlášení
 }
 
 export interface Team {

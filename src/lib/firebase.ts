@@ -19,6 +19,12 @@ import {
   arrayRemove,
   Timestamp
 } from 'firebase/firestore';
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut as fbSignOut
+} from 'firebase/auth';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 // Inicializace Firebase aplikace
@@ -40,7 +46,14 @@ try {
 
 export const db = firestoreDb;
 
+// Inicializace Firebase Auth & Google Auth Provider
+export const auth = getAuth(app);
+export const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({ prompt: 'select_account' });
+
 export {
+  signInWithPopup,
+  fbSignOut,
   collection,
   doc,
   setDoc,

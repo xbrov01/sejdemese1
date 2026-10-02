@@ -11,7 +11,9 @@
         "createdAt": { "type": "string", "format": "date-time" },
         "notificationPreferences": { "type": "object" },
         "fontSize": { "type": "string", "enum": ["standard", "large", "xlarge"] },
-        "deviceTokens": { "type": "array" }
+        "deviceTokens": { "type": "array" },
+        "avatarUrl": { "type": "string" },
+        "authProvider": { "type": "string", "enum": ["password", "google"] }
       },
       "required": ["name", "email", "role"]
     },
