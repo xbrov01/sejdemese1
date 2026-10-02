@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { UserProfile } from '../types';
 import { db, doc, setDoc, getDoc, auth, googleProvider, signInWithPopup } from '../lib/firebase';
+import { Capacitor } from '@capacitor/core';
+import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { UserCheck, Shield, User, Mail, ArrowRight, Lock, UserPlus, LogIn } from 'lucide-react';
 import { SYSTEM_SUPERUSER_EMAIL, SYSTEM_SUPERUSER_DEFAULT_PASSWORDS, OWNER_SUPERUSER_EMAIL } from '../utils/superUserUtils';
 
@@ -23,14 +25,31 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onLoginSuccess }) => {
     setGoogleLoading(true);
     setError(null);
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const googleUser = result.user;
-      if (!googleUser || !googleUser.email) {
+      let googleEmail: string | null = null;
+      let googleDisplayName: string | null = null;
+      let googlePhotoUrl: string | null = null;
+
+      if (Capacitor.isNativePlatform()) {
+        // V nativní mobilní aplikaci (Android / iOS) použijeme oficiální nativní Firebase plugin
+        // Tím se zabrání prázdné bílé obrazovce (WebView nepodporuje webové OAuth popupy)
+        const res = await FirebaseAuthentication.signInWithGoogle();
+        googleEmail = res.user?.email || null;
+        googleDisplayName = res.user?.displayName || null;
+        googlePhotoUrl = res.user?.photoUrl || null;
+      } else {
+        // Ve webovém prohlížeči použijeme Firebase Web SDK popup
+        const result = await signInWithPopup(auth, googleProvider);
+        googleEmail = result.user?.email || null;
+        googleDisplayName = result.user?.displayName || null;
+        googlePhotoUrl = result.user?.photoURL || null;
+      }
+
+      if (!googleEmail) {
         throw new Error('Z Google účtu se nepodařilo získat e-mailovou adresu.');
       }
 
-      const cleanEmail = googleUser.email.trim().toLowerCase();
-      const displayName = googleUser.displayName || cleanEmail.split('@')[0];
+      const cleanEmail = googleEmail.trim().toLowerCase();
+      const displayName = googleDisplayName || cleanEmail.split('@')[0];
       const isOwner = cleanEmail === OWNER_SUPERUSER_EMAIL.toLowerCase();
 
       const userRef = doc(db, 'users', cleanEmail);
@@ -44,7 +63,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onLoginSuccess }) => {
           role: isOwner ? 'admin' : 'member',
           isSuperAdmin: isOwner ? true : undefined,
           createdAt: new Date().toISOString(),
-          avatarUrl: googleUser.photoURL || undefined,
+          avatarUrl: googlePhotoUrl || undefined,
           authProvider: 'google',
         };
         await setDoc(userRef, newUser);
@@ -55,8 +74,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onLoginSuccess }) => {
           existingData.role = 'admin';
           existingData.isSuperAdmin = true;
         }
-        if (!existingData.avatarUrl && googleUser.photoURL) {
-          existingData.avatarUrl = googleUser.photoURL;
+        if (!existingData.avatarUrl && googlePhotoUrl) {
+          existingData.avatarUrl = googlePhotoUrl;
         }
         existingData.authProvider = existingData.authProvider || 'google';
         await setDoc(userRef, existingData, { merge: true });
@@ -64,7 +83,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onLoginSuccess }) => {
       }
     } catch (err: any) {
       console.error('Chyba při přihlašování přes Google:', err);
-      if (err?.code === 'auth/popup-closed-by-user' || err?.code === 'auth/cancelled-popup-request') {
+      if (
+        err?.code === 'auth/popup-closed-by-user' ||
+        err?.code === 'auth/cancelled-popup-request' ||
+        err?.message?.includes('canceled') ||
+        err?.message?.includes('cancelled') ||
+        err?.message?.includes('12501')
+      ) {
         return;
       }
       if (err?.code === 'auth/popup-blocked') {
@@ -77,6 +102,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onLoginSuccess }) => {
       }
       if (err?.code === 'auth/operation-not-allowed') {
         setError('Přihlašování přes Google není v tomto Firebase projektu zatím povoleno. Povolte prosím Google provider ve Firebase Console (Authentication > Sign-in method).');
+        return;
+      }
+      if (err?.message?.includes('10') || err?.message?.includes('DEVELOPER_ERROR')) {
+        setError('Google přihlášení v Android aplikaci vyžaduje přidání SHA-1 otisku klíče v nastavení Android aplikace ve Firebase Console.');
         return;
       }
       setError(err?.message || 'Při přihlašování přes Google nastala chyba.');

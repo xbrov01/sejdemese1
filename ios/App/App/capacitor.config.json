@@ -21,9 +21,16 @@
 		"StatusBar": {
 			"style": "DARK",
 			"backgroundColor": "#0f172a"
+		},
+		"FirebaseAuthentication": {
+			"skipNativeAuth": false,
+			"providers": [
+				"google.com"
+			]
 		}
 	},
 	"packageClassList": [
+		"FirebaseAuthenticationPlugin",
 		"AppPlugin",
 		"StatusBarPlugin"
 	]

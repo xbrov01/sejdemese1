@@ -28,6 +28,8 @@ import { checkAndGenerateReminders, showBrowserNotification, sendEventCancelledN
 import { getMemberDisplayName } from './utils/userUtils';
 import { applyAppFontSize, getInitialFontSize } from './utils/fontSizeUtils';
 import { setupNativeStatusBar, initPushNotifications, setupAndroidBackButton, setupAppStateListener } from './lib/capacitor';
+import { Capacitor } from '@capacitor/core';
+import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { isUserSuperAdmin, isUserTeamAdmin } from './utils/superUserUtils';
 import { Calendar, Plus, RefreshCw, ShieldAlert, Sparkles, Users, Key, Palette, History, ChevronDown, ChevronUp, LayoutDashboard, Bell, Settings, Trash2 } from 'lucide-react';
 
@@ -416,6 +418,9 @@ export default function App() {
   const handleSignOut = () => {
     localStorage.removeItem(LOCAL_STORAGE_USER_KEY);
     fbSignOut(auth).catch(() => {});
+    if (Capacitor.isNativePlatform()) {
+      FirebaseAuthentication.signOut().catch(() => {});
+    }
     setCurrentUser(null);
     setShowAuthModal(true);
   };
