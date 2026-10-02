@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { UserProfile, Team } from '../types';
-import { db, collection, addDoc, doc, updateDoc, arrayUnion, arrayRemove, getDocs, query, where } from '../lib/firebase';
+import { db, collection, addDoc, doc, updateDoc, deleteDoc, arrayUnion, arrayRemove, getDocs, query, where } from '../lib/firebase';
 import {
   Users,
   Plus,
@@ -25,8 +25,9 @@ import {
   Clock,
   MapPin,
   Pencil,
+  AlertTriangle,
 } from 'lucide-react';
-import { COLOR_PRESETS, IMAGE_PRESETS, compressImageFile, hexToRgba, getContrastingTextColor, getSolidLighterShade } from '../utils/themePresets';
+import { COLOR_PRESETS, compressImageFile, hexToRgba, getContrastingTextColor, getSolidLighterShade, MAX_IMAGE_FILE_SIZE_BYTES, MAX_IMAGE_FILE_SIZE_LABEL } from '../utils/themePresets';
 import { isUserTeamAdmin, SYSTEM_SUPERUSER_EMAIL } from '../utils/superUserUtils';
 
 export type TeamModalMode = 'create' | 'join' | 'members' | 'settings';
@@ -40,6 +41,7 @@ interface TeamManagerModalProps {
   onTeamCreated: (team: Team) => void;
   onTeamJoined: (teamId: string) => void;
   onTeamUpdated?: (team: Team) => void;
+  onTeamDeleted?: (teamId: string) => void;
 }
 
 export const TeamManagerModal: React.FC<TeamManagerModalProps> = ({
@@ -51,6 +53,7 @@ export const TeamManagerModal: React.FC<TeamManagerModalProps> = ({
   onTeamCreated,
   onTeamJoined,
   onTeamUpdated,
+  onTeamDeleted,
 }) => {
   const [mode, setMode] = useState<TeamModalMode>(initialMode);
 
@@ -59,8 +62,11 @@ export const TeamManagerModal: React.FC<TeamManagerModalProps> = ({
   const [editTeamCode, setEditTeamCode] = useState(activeTeam?.code || '');
   const [cardBgColor, setCardBgColor] = useState(activeTeam?.cardBgColor || '#059669');
   const [cardBgImage, setCardBgImage] = useState<string>(activeTeam?.cardBgImage || '');
-  const [customImageUrl, setCustomImageUrl] = useState('');
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+  // Delete team state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeletingTeam, setIsDeletingTeam] = useState(false);
 
   // Join Team state
   const [teamCodeInput, setTeamCodeInput] = useState('');
@@ -99,7 +105,7 @@ export const TeamManagerModal: React.FC<TeamManagerModalProps> = ({
     return `${prefix}-${randomNum}`;
   };
 
-  // Zpracování nahrání vlastního souboru obrázku
+  // Zpracování nahrání vlastního souboru obrázku (jediná povolená cesta pro obrázek týmu)
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -109,28 +115,26 @@ export const TeamManagerModal: React.FC<TeamManagerModalProps> = ({
       return;
     }
 
+    if (file.size > MAX_IMAGE_FILE_SIZE_BYTES) {
+      setError(`Velikost vybraného souboru přesahuje limit ${MAX_IMAGE_FILE_SIZE_LABEL}. Zvolte prosím menší obrázek.`);
+      return;
+    }
+
     setIsUploadingImage(true);
     setError(null);
     try {
       const compressedDataUrl = await compressImageFile(file);
       setCardBgImage(compressedDataUrl);
-      setSuccessMsg('Obrázek byl úspěšně nahrán!');
+      setSuccessMsg('Obrázek pozadí byl úspěšně nahrán!');
       setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err: any) {
       console.error('Chyba při kompresi obrázku:', err);
-      setError('Nepodařilo se zpracovat obrázek.');
+      setError(err?.message || 'Nepodařilo se zpracovat a optimalizovat obrázek.');
     } finally {
       setIsUploadingImage(false);
+      // Reset inputu aby šlo případně znovu vybrat stejný soubor
+      e.target.value = '';
     }
-  };
-
-  // Vložení vlastní URL adresy obrázku
-  const handleApplyCustomUrl = () => {
-    if (!customImageUrl.trim()) return;
-    setCardBgImage(customImageUrl.trim());
-    setCustomImageUrl('');
-    setSuccessMsg('URL obrázku byla nastavena.');
-    setTimeout(() => setSuccessMsg(null), 2500);
   };
 
   // Vytvoření nového týmu
@@ -230,6 +234,37 @@ export const TeamManagerModal: React.FC<TeamManagerModalProps> = ({
       setError('Nepodařilo se uložit nastavení týmu.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Smazání týmu správcem (včetně všech jeho událostí)
+  const handleDeleteTeam = async () => {
+    if (!activeTeam || !isCurrentTeamAdmin) return;
+    setIsDeletingTeam(true);
+    setError(null);
+    try {
+      // 1. Najít všechny události tohoto týmu a smazat je
+      const eventsQuery = query(collection(db, 'events'), where('teamId', '==', activeTeam.id));
+      const eventsSnapshot = await getDocs(eventsQuery);
+      const deletePromises: Promise<void>[] = [];
+      eventsSnapshot.forEach((docSnap) => {
+        deletePromises.push(deleteDoc(docSnap.ref));
+      });
+      await Promise.all(deletePromises);
+
+      // 2. Smazat samotný dokument týmu
+      await deleteDoc(doc(db, 'teams', activeTeam.id));
+
+      if (onTeamDeleted) {
+        onTeamDeleted(activeTeam.id);
+      }
+      setShowDeleteConfirm(false);
+      onClose();
+    } catch (err: any) {
+      console.error('Chyba při mazání týmu:', err);
+      setError('Nepodařilo se smazat tým. Zkuste to prosím znovu.');
+      setIsDeletingTeam(false);
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -375,10 +410,6 @@ export const TeamManagerModal: React.FC<TeamManagerModalProps> = ({
 
   // Admin Reset Hesla
   const handleAdminResetPassword = async (targetUser: UserProfile) => {
-    if (!window.confirm(`Opravdu chcete vygenerovat dočasné heslo pro uživatele ${targetUser.name}?`)) {
-      return;
-    }
-
     setLoading(true);
     setError(null);
 
@@ -457,7 +488,8 @@ export const TeamManagerModal: React.FC<TeamManagerModalProps> = ({
               }`}
             >
               <Palette className="w-3.5 h-3.5 text-purple-600" />
-              <span>Vzhled & Nastavení</span>
+              <span className="hidden sm:inline">Vzhled & Nastavení</span>
+              <span className="sm:hidden">Nastavení</span>
             </button>
             <button
               onClick={() => { setMode('members'); setError(null); setSuccessMsg(null); }}
@@ -468,7 +500,8 @@ export const TeamManagerModal: React.FC<TeamManagerModalProps> = ({
               }`}
             >
               <Users className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Správa členů</span>
+              <span className="hidden sm:inline">Správa členů</span>
+              <span className="sm:hidden">Členové</span>
             </button>
           </div>
         ) : (
@@ -661,7 +694,7 @@ export const TeamManagerModal: React.FC<TeamManagerModalProps> = ({
                 </div>
               </div>
 
-              {/* OBRÁZEK POZADÍ KARTY UDÁLOSTI (NEPOVINNÝ) */}
+              {/* OBRÁZEK POZADÍ KARTY UDÁLOSTI (NEPOVINNÝ - POUZE NAHRÁNÍM SOUBORU) */}
               <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
@@ -674,7 +707,7 @@ export const TeamManagerModal: React.FC<TeamManagerModalProps> = ({
                     <button
                       type="button"
                       onClick={() => setCardBgImage('')}
-                      className="text-xs text-rose-700 hover:text-rose-800 font-bold flex items-center space-x-1 cursor-pointer bg-rose-50 border border-rose-200 px-2 py-1 rounded-lg"
+                      className="text-xs text-rose-700 hover:text-rose-800 font-bold flex items-center space-x-1 cursor-pointer bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-lg transition hover:bg-rose-100"
                     >
                       <Trash2 className="w-3 h-3" />
                       <span>Odebrat obrázek</span>
@@ -682,77 +715,30 @@ export const TeamManagerModal: React.FC<TeamManagerModalProps> = ({
                   )}
                 </div>
 
-                {/* Předvolené sportovní motivy */}
+                {/* Vlastní obrázek: Nahrání souboru ze zařízení (jediný podporovaný způsob) */}
                 <div>
-                  <div className="text-[11px] text-slate-500 font-medium mb-2">
-                    Vyberte ze sportovních motivů:
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {IMAGE_PRESETS.map((imgPreset) => {
-                      const isSelected = cardBgImage === imgPreset.url;
-                      return (
-                        <button
-                          key={imgPreset.id}
-                          type="button"
-                          onClick={() => setCardBgImage(imgPreset.url)}
-                          className={`relative group rounded-xl overflow-hidden text-left transition cursor-pointer h-16 border ${
-                            isSelected
-                              ? 'border-emerald-500 ring-2 ring-emerald-400 shadow-md scale-[1.02]'
-                              : 'border-slate-200 opacity-85 hover:opacity-100'
-                          }`}
-                        >
-                          <img
-                            src={imgPreset.thumbnail}
-                            alt={imgPreset.name}
-                            className="w-full h-full object-cover"
-                            referrerPolicy="no-referrer"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent flex items-end p-1.5">
-                            <span className="text-[10px] font-bold text-white leading-tight truncate">
-                              {imgPreset.name}
-                            </span>
-                          </div>
-                          {isSelected && (
-                            <div className="absolute top-1 right-1 bg-emerald-500 text-slate-950 rounded-full p-0.5 shadow-xs font-black">
-                              <Check className="w-3 h-3 stroke-[3]" />
-                            </div>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Vlastní obrázek: Nahrání souboru nebo URL */}
-                <div className="pt-2 border-t border-slate-200 flex flex-col sm:flex-row items-center gap-2">
-                  <label className="w-full sm:w-auto flex-1 flex items-center justify-center px-3 py-2 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 cursor-pointer shadow-2xs transition">
-                    <Upload className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
-                    <span>{isUploadingImage ? 'Nahrávání...' : 'Nahrát soubor z PC'}</span>
+                  <label className="flex flex-col items-center justify-center p-4 sm:p-5 bg-white hover:bg-slate-50 active:bg-slate-100 border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-xl transition cursor-pointer text-center group">
+                    <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2 group-hover:scale-105 transition">
+                      <Upload className="w-5 h-5" />
+                    </div>
+                    <span className="text-xs font-bold text-slate-800">
+                      {isUploadingImage
+                        ? 'Zpracovávám a optimalizuji obrázek...'
+                        : cardBgImage
+                        ? 'Kliknutím nahrajte jiný soubor obrázku'
+                        : 'Nahrát soubor obrázku ze zařízení'}
+                    </span>
+                    <span className="text-[11px] text-slate-500 mt-1">
+                      Podporované formáty: JPG, PNG, WebP (maximální velikost: {MAX_IMAGE_FILE_SIZE_LABEL})
+                    </span>
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/png,image/jpeg,image/webp,image/jpg"
                       onChange={handleFileUpload}
                       disabled={isUploadingImage}
                       className="hidden"
                     />
                   </label>
-
-                  <div className="w-full sm:w-auto flex-1 flex items-center gap-1.5">
-                    <input
-                      type="url"
-                      placeholder="Nebo vložte URL obrázku..."
-                      value={customImageUrl}
-                      onChange={(e) => setCustomImageUrl(e.target.value)}
-                      className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:ring-1 focus:ring-emerald-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleApplyCustomUrl}
-                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shrink-0 cursor-pointer shadow-2xs"
-                    >
-                      Použít
-                    </button>
-                  </div>
                 </div>
               </div>
 
@@ -823,19 +809,50 @@ export const TeamManagerModal: React.FC<TeamManagerModalProps> = ({
               <div className="pt-2">
                 <button
                   type="submit"
-                  disabled={loading || isUploadingImage}
-                  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-black rounded-xl shadow-md text-sm transition flex items-center justify-center space-x-2 cursor-pointer"
+                  disabled={loading || isUploadingImage || isDeletingTeam}
+                  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-black rounded-xl shadow-md text-sm transition flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50"
                 >
                   <Check className="w-4 h-4 stroke-[3]" />
                   <span>
                     {loading
                       ? 'Ukládání...'
                       : mode === 'create'
-                      ? 'Vytvořit tým se zvoleným vzhledem'
+                      ? 'Vytvořit'
                       : 'Uložit nastavení a vzhled týmu'}
                   </span>
                 </button>
               </div>
+
+              {/* Danger Zone: Smazání týmu správcem */}
+              {mode === 'settings' && activeTeam && isCurrentTeamAdmin && (
+                <div className="pt-6 border-t border-slate-200 mt-6">
+                  <div className="bg-rose-50/70 border border-rose-200/90 rounded-2xl p-4 sm:p-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <div className="flex items-center space-x-1.5 text-rose-800 font-bold text-xs uppercase tracking-wider">
+                          <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                          <span>Nebezpečná zóna</span>
+                        </div>
+                        <h4 className="text-sm font-black text-rose-950 mt-1">
+                          Smazat tým a všechny jeho události
+                        </h4>
+                        <p className="text-xs text-rose-700/80 mt-1 max-w-md leading-relaxed">
+                          Tato akce trvale odstraní tým, všechny jeho naplánované události, docházky a diskuze. Tuto akci nelze vrátit.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowDeleteConfirm(true)}
+                        disabled={loading || isDeletingTeam}
+                        className="px-4 py-2.5 bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white text-xs font-bold rounded-xl flex items-center justify-center space-x-1.5 transition cursor-pointer shadow-2xs shrink-0 self-start sm:self-auto disabled:opacity-50"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Smazat tým</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </form>
           )}
 
@@ -871,7 +888,7 @@ export const TeamManagerModal: React.FC<TeamManagerModalProps> = ({
           {mode === 'members' && activeTeam && (
             <div className="space-y-4">
               {/* Team Code Share Box */}
-              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <div className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">
                     Unikátní kód týmu pro sdílení:
@@ -880,20 +897,20 @@ export const TeamManagerModal: React.FC<TeamManagerModalProps> = ({
                     #{activeTeam.code}
                   </div>
                 </div>
-                <div className="flex items-center space-x-1.5">
+                <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto pt-2.5 sm:pt-0 border-t border-slate-200/80 sm:border-0 justify-end">
                   <button
                     type="button"
                     onClick={() => copyCodeToClipboard(activeTeam.code)}
-                    className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center space-x-1.5 transition cursor-pointer shadow-2xs"
+                    className="flex-1 sm:flex-initial justify-center px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center space-x-1.5 transition cursor-pointer shadow-2xs"
                   >
                     <Copy className="w-3.5 h-3.5" />
-                    <span>{copiedCode ? 'Zkopírováno!' : 'Zkopírovat'}</span>
+                    <span>{copiedCode ? 'Zkopírováno!' : 'Zkopírovat kód'}</span>
                   </button>
                   {isCurrentTeamAdmin && (
                     <button
                       type="button"
                       onClick={() => { setMode('settings'); setError(null); setSuccessMsg(null); }}
-                      className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl flex items-center space-x-1.5 transition cursor-pointer border border-slate-200 shadow-2xs"
+                      className="flex-1 sm:flex-initial justify-center px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl flex items-center space-x-1.5 transition cursor-pointer border border-slate-200 shadow-2xs"
                       title="Změnit kód týmu"
                     >
                       <Pencil className="w-3.5 h-3.5 text-slate-600" />
@@ -929,15 +946,16 @@ export const TeamManagerModal: React.FC<TeamManagerModalProps> = ({
                     return (
                       <div
                         key={u.id}
-                        className={`p-3 rounded-xl flex items-center justify-between transition border ${
+                        className={`p-3 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 transition border ${
                           isMember ? 'bg-slate-50 border-slate-200' : 'bg-white border-slate-100 opacity-70'
                         }`}
                       >
-                        <div className="truncate pr-2">
+                        {/* Informace o hráči + odznaky (na mobilu mají plnou šířku a nepřekrývají se) */}
+                        <div className="min-w-0 flex-1">
                           <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5 flex-wrap">
-                            <span>{u.name}</span>
+                            <span className="font-bold">{u.name}</span>
                             {memberNickname && (
-                              <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] px-1.5 py-0.2 rounded font-bold">
+                              <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] px-1.5 py-0.5 rounded font-bold">
                                 Přezdívka: „{memberNickname}“
                               </span>
                             )}
@@ -953,15 +971,16 @@ export const TeamManagerModal: React.FC<TeamManagerModalProps> = ({
                               </span>
                             ) : null}
                           </div>
-                          <div className="text-[11px] text-slate-500 truncate">{u.email}</div>
+                          <div className="text-[11px] text-slate-500 truncate mt-0.5">{u.email}</div>
                           {u.requirePasswordReset && (
-                            <div className="text-[10px] text-amber-700 font-bold">
+                            <div className="text-[10px] text-amber-700 font-bold mt-0.5">
                               Vyžadován reset hesla
                             </div>
                           )}
                         </div>
 
-                        <div className="flex items-center space-x-1.5">
+                        {/* Akční tlačítka pro člena (na mobilu na samostatném řádku) */}
+                        <div className="flex items-center gap-1.5 flex-wrap justify-end pt-2 sm:pt-0 border-t border-slate-200/60 sm:border-0 shrink-0">
                           {/* Tlačítko přidělení / odebrání práv správce (viditelné pro správce týmu u členů) */}
                           {isMember && isCurrentTeamAdmin && (
                             <>
@@ -1044,6 +1063,44 @@ export const TeamManagerModal: React.FC<TeamManagerModalProps> = ({
           )}
         </div>
       </div>
+
+      {/* Modální okno pro bezpečné potvrzení smazání týmu */}
+      {showDeleteConfirm && activeTeam && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-60 flex items-center justify-center p-4 overflow-hidden overscroll-contain animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-sm w-full p-5 sm:p-6 text-center space-y-4 animate-in fade-in zoom-in-95 duration-150 text-slate-900">
+            <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center mx-auto border border-rose-200 shadow-2xs">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-bold text-base sm:text-lg text-slate-950">
+                Opravdu smazat tým?
+              </h3>
+              <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
+                Tým <strong className="text-slate-950">„{activeTeam.name}“</strong> bude včetně všech svých událostí a docházek trvale smazán. Tuto akci nelze vrátit zpět.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={isDeletingTeam}
+                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 font-bold rounded-xl text-xs transition cursor-pointer border border-slate-200 shadow-2xs disabled:opacity-50"
+              >
+                Ponechat
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteTeam}
+                disabled={isDeletingTeam}
+                className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white font-black rounded-xl text-xs transition cursor-pointer shadow-md flex items-center justify-center gap-1.5 disabled:opacity-50"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{isDeletingTeam ? 'Mazání...' : 'Trvale smazat'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

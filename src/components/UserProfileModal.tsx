@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { UserProfile, Team, TeamNotificationPreferences, AppFontSize } from '../types';
-import { db, doc, updateDoc } from '../lib/firebase';
+import { db, doc, updateDoc, arrayRemove, arrayUnion } from '../lib/firebase';
 import { getMemberDisplayName } from '../utils/userUtils';
 import { getUserTeamNotificationPreferences, sendTestBrowserNotification } from '../utils/notificationService';
 import { FONT_SIZE_OPTIONS, applyAppFontSize, getInitialFontSize, saveFontSizePreference } from '../utils/fontSizeUtils';
@@ -17,6 +17,7 @@ interface UserProfileModalProps {
   onUpdateTeamNickname?: (teamId: string, nickname: string) => void;
   onOpenNativeAppModal?: () => void;
   onSignOut?: () => void;
+  onLeaveTeam?: (teamId: string) => void;
 }
 
 export const UserProfileModal: React.FC<UserProfileModalProps> = ({
@@ -28,6 +29,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   onUpdateTeamNickname,
   onOpenNativeAppModal,
   onSignOut,
+  onLeaveTeam,
 }) => {
   const [fullName, setFullName] = useState(currentUser.name || '');
   
@@ -67,6 +69,10 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [testNotificationStatus, setTestNotificationStatus] = useState<string | null>(null);
+
+  // Stav pro opuštění týmu
+  const [teamToLeaveConfirm, setTeamToLeaveConfirm] = useState<Team | null>(null);
+  const [isLeavingTeam, setIsLeavingTeam] = useState(false);
 
   const handleFontSizeSelect = (size: AppFontSize) => {
     setSelectedFontSize(size);
@@ -123,6 +129,57 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
       ...prev,
       [teamId]: !prev[teamId],
     }));
+  };
+
+  // Opuštění týmu uživatelem
+  const handleConfirmLeaveTeam = async (teamToLeave: Team) => {
+    setIsLeavingTeam(true);
+    setErrorMsg(null);
+    try {
+      const teamRef = doc(db, 'teams', teamToLeave.id);
+      const updateData: any = {
+        memberEmails: arrayRemove(currentUser.email),
+        adminEmails: arrayRemove(currentUser.email),
+      };
+
+      if (teamToLeave.createdBy?.toLowerCase() === currentUser.email.toLowerCase()) {
+        const remaining = (teamToLeave.memberEmails || []).filter(
+          (e) => e.toLowerCase() !== currentUser.email.toLowerCase()
+        );
+        updateData.createdBy = remaining.length > 0 ? remaining[0] : '';
+        if (remaining.length > 0) {
+          updateData.adminEmails = arrayUnion(remaining[0]);
+        }
+      }
+
+      await updateDoc(teamRef, updateData);
+
+      // Aktualizovat lokální mapy
+      setTeamNicknames((prev) => {
+        const copy = { ...prev };
+        delete copy[teamToLeave.id];
+        return copy;
+      });
+      setNotificationPreferences((prev) => {
+        const copy = { ...prev };
+        delete copy[teamToLeave.id];
+        return copy;
+      });
+
+      if (onLeaveTeam) {
+        onLeaveTeam(teamToLeave.id);
+      }
+
+      setTeamToLeaveConfirm(null);
+      setSuccessMsg(`Úspěšně jste opustil(a) tým „${teamToLeave.name}“.`);
+      setTimeout(() => setSuccessMsg(null), 3000);
+    } catch (err: any) {
+      console.error('Chyba při opuštění týmu:', err);
+      setErrorMsg('Nepodařilo se opustit tým. Zkuste to prosím znovu.');
+      setTeamToLeaveConfirm(null);
+    } finally {
+      setIsLeavingTeam(false);
+    }
   };
 
   // Uložení jména, přezdívek a předvoleb notifikací
@@ -555,6 +612,23 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                         )}
                       </div>
 
+                      {/* Tlačítko pro opuštění týmu */}
+                      <div className="mt-3 pt-2.5 border-t border-slate-200/80 flex items-center justify-between gap-2">
+                        <span className="text-[11px] text-slate-500">
+                          Již nechcete být členem tohoto týmu?
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setTeamToLeaveConfirm(team)}
+                          disabled={loading || isLeavingTeam}
+                          className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 active:bg-rose-200 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl transition cursor-pointer flex items-center space-x-1.5 shadow-2xs shrink-0 disabled:opacity-50"
+                          title={`Opustit tým ${team.name}`}
+                        >
+                          <LogOut className="w-3.5 h-3.5 text-rose-600" />
+                          <span>Opustit tým</span>
+                        </button>
+                      </div>
+
                     </div>
                   );
                 })}
@@ -724,6 +798,44 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
         </div>
 
       </div>
+
+      {/* Confirmation Modal for Leaving a Team */}
+      {teamToLeaveConfirm && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-60 flex items-center justify-center p-4 overflow-hidden overscroll-contain animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-sm w-full p-5 sm:p-6 text-center space-y-4 animate-in fade-in zoom-in-95 duration-150 text-slate-900">
+            <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center mx-auto border border-rose-200 shadow-2xs">
+              <LogOut className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-bold text-base sm:text-lg text-slate-950">
+                Opustit tým?
+              </h3>
+              <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
+                Opravdu si přejete opustit tým <strong className="text-slate-950">„{teamToLeaveConfirm.name}“</strong>? Ztratíte přístup k jeho událostem a diskuzím. Pro opětovný vstup budete potřebovat kód týmu od správce.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setTeamToLeaveConfirm(null)}
+                disabled={isLeavingTeam}
+                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 font-bold rounded-xl text-xs transition cursor-pointer border border-slate-200 shadow-2xs disabled:opacity-50"
+              >
+                Zůstat v týmu
+              </button>
+              <button
+                type="button"
+                onClick={() => handleConfirmLeaveTeam(teamToLeaveConfirm)}
+                disabled={isLeavingTeam}
+                className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white font-black rounded-xl text-xs transition cursor-pointer shadow-md flex items-center justify-center gap-1.5 disabled:opacity-50"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>{isLeavingTeam ? 'Odpouštění...' : 'Opustit tým'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

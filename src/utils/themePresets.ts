@@ -1,15 +1,6 @@
-import styleCleanAthleticImg from '../assets/images/style_clean_athletic_1790523502829.jpg';
-
 export interface ColorPreset {
   name: string;
   value: string;
-}
-
-export interface ImagePreset {
-  id: string;
-  name: string;
-  url: string;
-  thumbnail: string;
 }
 
 export const COLOR_PRESETS: ColorPreset[] = [
@@ -23,68 +14,19 @@ export const COLOR_PRESETS: ColorPreset[] = [
   { name: 'Grafitová atletická (Graphite)', value: '#334155' },
 ];
 
-export const IMAGE_PRESETS: ImagePreset[] = [
-  {
-    id: 'clean_athletic',
-    name: 'Čistý atletický styl (Světlý)',
-    url: styleCleanAthleticImg,
-    thumbnail: styleCleanAthleticImg,
-  },
-  {
-    id: 'football',
-    name: 'Fotbalový trávník',
-    url: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=1200&q=80',
-    thumbnail: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=240&q=70',
-  },
-  {
-    id: 'futsal_hall',
-    name: 'Palubovka haly / Futsal',
-    url: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1200&q=80',
-    thumbnail: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=240&q=70',
-  },
-  {
-    id: 'night_stadium',
-    name: 'Noční stadion s reflektory',
-    url: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1200&q=80',
-    thumbnail: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=240&q=70',
-  },
-  {
-    id: 'volleyball',
-    name: 'Volejbalový kurt',
-    url: 'https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?auto=format&fit=crop&w=1200&q=80',
-    thumbnail: 'https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?auto=format&fit=crop&w=240&q=70',
-  },
-  {
-    id: 'ice_hockey',
-    name: 'Ledová plocha / Hokej',
-    url: 'https://images.unsplash.com/photo-1580748141549-71748dbe0bdc?auto=format&fit=crop&w=1200&q=80',
-    thumbnail: 'https://images.unsplash.com/photo-1580748141549-71748dbe0bdc?auto=format&fit=crop&w=240&q=70',
-  },
-  {
-    id: 'basketball',
-    name: 'Basketbalový kurt',
-    url: 'https://images.unsplash.com/photo-1519766304817-4f37bda74a29?auto=format&fit=crop&w=1200&q=80',
-    thumbnail: 'https://images.unsplash.com/photo-1519766304817-4f37bda74a29?auto=format&fit=crop&w=240&q=70',
-  },
-  {
-    id: 'running_track',
-    name: 'Běžecká atletická dráha',
-    url: 'https://images.unsplash.com/photo-1530549387789-4c1017266635?auto=format&fit=crop&w=1200&q=80',
-    thumbnail: 'https://images.unsplash.com/photo-1530549387789-4c1017266635?auto=format&fit=crop&w=240&q=70',
-  },
-  {
-    id: 'tennis_court',
-    name: 'Tenisový kurt',
-    url: 'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?auto=format&fit=crop&w=1200&q=80',
-    thumbnail: 'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?auto=format&fit=crop&w=240&q=70',
-  },
-];
+export const MAX_IMAGE_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB limit
+export const MAX_IMAGE_FILE_SIZE_LABEL = '5 MB';
 
 /**
  * Komprese a optimalizace nahraného obrázku pro úsporné uložení
  */
 export const compressImageFile = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
+    if (file.size > MAX_IMAGE_FILE_SIZE_BYTES) {
+      reject(new Error(`Maximální povolená velikost souboru je ${MAX_IMAGE_FILE_SIZE_LABEL}.`));
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (e) => {
       const img = new window.Image();

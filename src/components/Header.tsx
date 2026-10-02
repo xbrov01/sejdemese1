@@ -40,10 +40,34 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [isTeamMenuOpen, setIsTeamMenuOpen] = useState(false);
   const teamMenuRef = useRef<HTMLDivElement | null>(null);
+  const [dropdownTop, setDropdownTop] = useState<number>(54);
+  const [isMobile, setIsMobile] = useState<boolean>(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 640 : false
+  );
 
   const isAdmin = isUserTeamAdmin(currentUser, activeTeam);
   const isSuper = isUserSuperAdmin(currentUser);
   const currentTeamNickname = activeTeam?.nicknames?.[currentUser.email] || currentUser.teamNicknames?.[activeTeam?.id || ''];
+
+  // Pozicování dropdownu pro mobilní zobrazení, aby nepřetékal vpravo
+  useEffect(() => {
+    if (!isTeamMenuOpen) return;
+
+    const updatePosition = () => {
+      setIsMobile(window.innerWidth < 640);
+      if (teamMenuRef.current) {
+        const rect = teamMenuRef.current.getBoundingClientRect();
+        setDropdownTop(Math.round(rect.bottom + 6));
+      }
+    };
+
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [isTeamMenuOpen]);
 
   // Zavření dropdownu při kliknutí/dotyku mimo menu nebo při stisku Escape
   useEffect(() => {
@@ -154,7 +178,10 @@ export const Header: React.FC<HeaderProps> = ({
 
                 {/* Dropdown menu pro přepínání týmu - plovoucí vrstva nad toolbarem */}
                 {isTeamMenuOpen && (
-                  <div className="absolute left-0 top-full mt-2 w-72 sm:w-80 max-w-[calc(100vw-1.5rem)] bg-white rounded-2xl shadow-2xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+                  <div
+                    style={isMobile ? { top: `${dropdownTop}px` } : undefined}
+                    className="fixed sm:absolute left-2.5 right-2.5 sm:left-0 sm:right-auto sm:top-full sm:mt-2 w-auto sm:w-80 bg-white rounded-2xl shadow-2xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150 max-h-[calc(100vh-80px)] overflow-y-auto"
+                  >
                     <div className="px-3.5 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100 flex items-center justify-between">
                       <span>Výběr týmu / přehled</span>
                       <span className="text-[9px] bg-slate-100 text-emerald-700 px-1.5 py-0.5 rounded font-mono font-bold">
@@ -204,7 +231,7 @@ export const Header: React.FC<HeaderProps> = ({
                             <div className="truncate pr-2">
                               <div className="font-semibold text-slate-900 truncate">{team.name}</div>
                               <div className="text-[10px] text-slate-500 font-mono">
-                                #{team.code} • {team.memberEmails?.length || 1} členů
+                                #{team.code} • Počet členů: {team.memberEmails?.length || 1}
                               </div>
                             </div>
                             {isSelected ? (
@@ -223,7 +250,8 @@ export const Header: React.FC<HeaderProps> = ({
                         className="w-full text-left px-3 py-2 text-xs font-semibold text-emerald-700 bg-white hover:bg-emerald-50 border border-slate-200 active:bg-emerald-100 rounded-xl flex items-center transition cursor-pointer"
                       >
                         <Key className="w-3.5 h-3.5 mr-2 shrink-0 text-emerald-600" />
-                        <span>Připojit k týmu pomocí kódu</span>
+                        <span className="hidden sm:inline">Připojit k týmu pomocí kódu</span>
+                        <span className="sm:hidden">Zadat kód týmu</span>
                       </button>
 
                       <button
@@ -232,7 +260,8 @@ export const Header: React.FC<HeaderProps> = ({
                         className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-800 bg-white hover:bg-slate-100 border border-slate-200 active:bg-slate-200 rounded-xl flex items-center transition cursor-pointer"
                       >
                         <Plus className="w-3.5 h-3.5 mr-2 shrink-0 text-emerald-600" />
-                        <span>Vytvořit nový tým</span>
+                        <span className="hidden sm:inline">Vytvořit nový tým</span>
+                        <span className="sm:hidden">Nový tým</span>
                       </button>
 
                       {isAdmin && activeTeam && onOpenTeamSettings && (
@@ -242,7 +271,8 @@ export const Header: React.FC<HeaderProps> = ({
                           className="w-full text-left px-3 py-2 text-xs font-semibold text-purple-700 bg-white hover:bg-purple-50 border border-slate-200 active:bg-purple-100 rounded-xl flex items-center transition cursor-pointer"
                         >
                           <Palette className="w-3.5 h-3.5 mr-2 shrink-0 text-purple-600" />
-                          <span>Vzhled & styl aktivního týmu</span>
+                          <span className="hidden sm:inline">Vzhled & styl aktivního týmu</span>
+                          <span className="sm:hidden">Nastavení týmu</span>
                         </button>
                       )}
                     </div>

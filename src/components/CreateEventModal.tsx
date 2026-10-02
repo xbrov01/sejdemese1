@@ -345,7 +345,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({
             ) : (
               <>
                 <Plus className="w-4 h-4 stroke-[3]" />
-                <span>{loading ? 'Vytváření...' : 'Vytvořit událost'}</span>
+                <span>{loading ? 'Vytváření...' : 'Vytvořit'}</span>
               </>
             )}
           </button>

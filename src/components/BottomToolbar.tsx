@@ -138,7 +138,7 @@ export const BottomToolbar: React.FC<BottomToolbarProps> = ({
                       <div className="truncate">
                         <div className="text-xs font-bold text-slate-900 truncate">{team.name}</div>
                         <div className="text-[10px] text-slate-400 font-mono">
-                          #{team.code} • {team.memberEmails?.length || 1} členů
+                          #{team.code} • Počet členů: {team.memberEmails?.length || 1}
                         </div>
                       </div>
                     </div>

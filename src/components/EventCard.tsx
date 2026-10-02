@@ -637,7 +637,10 @@ export const EventCard: React.FC<EventCardProps> = ({
                 {isCreatorOrAdmin && onEditEvent && !isPast && (
                   <button
                     type="button"
-                    onClick={() => onEditEvent(event)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEditEvent(event);
+                    }}
                     className="p-2 text-slate-700 hover:text-emerald-700 bg-white hover:bg-slate-50 active:bg-slate-100 rounded-xl transition cursor-pointer border border-slate-200 shadow-2xs"
                     title="Upravit událost"
                     aria-label="Upravit událost"
@@ -650,7 +653,10 @@ export const EventCard: React.FC<EventCardProps> = ({
                 {isCreatorOrAdmin && onDeleteEvent && (
                   <button
                     type="button"
-                    onClick={() => onDeleteEvent(event.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteEvent(event.id);
+                    }}
                     className="p-2 text-slate-600 hover:text-rose-600 bg-white hover:bg-rose-50 active:bg-rose-100 rounded-xl transition cursor-pointer border border-slate-200 shadow-2xs"
                     title="Zrušit a smazat událost"
                     aria-label="Zrušit a smazat událost"
@@ -671,7 +677,8 @@ export const EventCard: React.FC<EventCardProps> = ({
                 >
                   <div className="flex items-center space-x-2 text-slate-800 font-bold">
                     <Bell className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Týmová připomenutí</span>
+                    <span className="hidden sm:inline">Týmová připomenutí</span>
+                    <span className="sm:hidden">Připomenutí</span>
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border shadow-2xs ${
                       eventReminders.length > 0
                         ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
@@ -854,7 +861,8 @@ export const EventCard: React.FC<EventCardProps> = ({
             <div className="flex items-center space-x-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
               <span className="text-xs sm:text-sm font-bold text-slate-900">
-                Zúčastní se
+                <span className="hidden sm:inline">Zúčastní se</span>
+                <span className="sm:hidden">Jdou</span>
               </span>
               <span className="bg-emerald-500 text-slate-950 text-[11px] font-black px-2 py-0.5 rounded-full">
                 {yesList.length}
@@ -900,7 +908,8 @@ export const EventCard: React.FC<EventCardProps> = ({
             <div className="flex items-center space-x-2">
               <HelpCircle className="w-4 h-4 text-amber-600 shrink-0" />
               <span className="text-xs sm:text-sm font-bold text-slate-900">
-                Možná se zúčastní
+                <span className="hidden sm:inline">Možná se zúčastní</span>
+                <span className="sm:hidden">Možná</span>
               </span>
               <span className="bg-amber-400 text-slate-950 text-[11px] font-black px-2 py-0.5 rounded-full">
                 {maybeList.length}
@@ -946,7 +955,8 @@ export const EventCard: React.FC<EventCardProps> = ({
             <div className="flex items-center space-x-2">
               <XCircle className="w-4 h-4 text-rose-600 shrink-0" />
               <span className="text-xs sm:text-sm font-bold text-slate-900">
-                Nezúčastní se
+                <span className="hidden sm:inline">Nezúčastní se</span>
+                <span className="sm:hidden">Nejdou</span>
               </span>
               <span className="bg-rose-500 text-white text-[11px] font-black px-2 py-0.5 rounded-full">
                 {noList.length}
@@ -1039,7 +1049,8 @@ export const EventCard: React.FC<EventCardProps> = ({
           <div className="flex items-center space-x-2">
             <MessageSquare className={`w-4 h-4 ${messages.length > 0 ? 'text-emerald-600' : 'text-slate-500'}`} />
             <h3 className="font-bold text-sm text-slate-900 flex items-center gap-1.5">
-              <span>Diskuze k události</span>
+              <span className="hidden sm:inline">Diskuze k události</span>
+              <span className="sm:hidden">Diskuze</span>
               <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
                 messages.length > 0 ? 'bg-emerald-500 text-slate-950' : 'bg-slate-200 text-slate-600'
               }`}>
@@ -1048,7 +1059,8 @@ export const EventCard: React.FC<EventCardProps> = ({
             </h3>
           </div>
           <div className="text-xs text-slate-500 flex items-center group-hover:text-slate-900 transition">
-            <span>{isChatExpanded ? 'Skrýt diskuzi' : messages.length === 0 ? 'Otevřít diskuzi' : 'Zobrazit diskuzi'}</span>
+            <span className="hidden sm:inline">{isChatExpanded ? 'Skrýt diskuzi' : messages.length === 0 ? 'Otevřít diskuzi' : 'Zobrazit diskuzi'}</span>
+            <span className="sm:hidden">{isChatExpanded ? 'Skrýt' : 'Zobrazit'}</span>
             {isChatExpanded ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />}
           </div>
         </button>

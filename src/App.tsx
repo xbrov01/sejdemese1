@@ -27,7 +27,7 @@ import { getMemberDisplayName } from './utils/userUtils';
 import { applyAppFontSize, getInitialFontSize } from './utils/fontSizeUtils';
 import { setupNativeStatusBar, initPushNotifications, setupAndroidBackButton, setupAppStateListener } from './lib/capacitor';
 import { isUserSuperAdmin, isUserTeamAdmin } from './utils/superUserUtils';
-import { Calendar, Plus, RefreshCw, ShieldAlert, Sparkles, Users, Key, Palette, History, ChevronDown, ChevronUp, LayoutDashboard, Bell, Settings } from 'lucide-react';
+import { Calendar, Plus, RefreshCw, ShieldAlert, Sparkles, Users, Key, Palette, History, ChevronDown, ChevronUp, LayoutDashboard, Bell, Settings, Trash2 } from 'lucide-react';
 
 const LOCAL_STORAGE_USER_KEY = 'sejdemese_active_user_email';
 const PUSHED_NOTIFICATIONS_STORAGE_PREFIX = 'sejdemese_pushed_notif_ids_';
@@ -63,6 +63,8 @@ export default function App() {
   const [allEvents, setAllEvents] = useState<Event[]>([]);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [isPastEventsExpanded, setIsPastEventsExpanded] = useState(false);
+  const [eventToDeleteConfirm, setEventToDeleteConfirm] = useState<Event | null>(null);
+  const [isDeletingEvent, setIsDeletingEvent] = useState(false);
 
   // Modals state
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -112,11 +114,15 @@ export default function App() {
         setEditingEvent(null);
         return true;
       }
+      if (eventToDeleteConfirm) {
+        setEventToDeleteConfirm(null);
+        return true;
+      }
       return false;
     });
 
     return () => cleanup();
-  }, [showNativeAppModal, showUserProfileModal, showNotificationModal, teamModalMode, showCreateEventModal, editingEvent]);
+  }, [showNativeAppModal, showUserProfileModal, showNotificationModal, teamModalMode, showCreateEventModal, editingEvent, eventToDeleteConfirm]);
 
   // 0c1. Zámek posouvání hlavní obrazovky při otevřeném jakémkoliv modálním okně
   // Zabraňuje rolování stránky na pozadí a eliminuje duplicitní posuvníky
@@ -127,6 +133,7 @@ export default function App() {
     teamModalMode ||
     showCreateEventModal ||
     editingEvent ||
+    eventToDeleteConfirm ||
     !currentUser ||
     currentUser?.requirePasswordReset
   );
@@ -225,8 +232,8 @@ export default function App() {
       const isSuper = isUserSuperAdmin(currentUser);
       snapshot.forEach((docSnap) => {
         const data = docSnap.data() as Team;
-        // Zobrazujeme týmy, kde je uživatel členem NEBO které vytvořil, případně VŠECHNY týmy pro superadmina
-        if (isSuper || data.memberEmails?.includes(currentUser.email) || data.createdBy === currentUser.email) {
+        // Zobrazujeme týmy, kde je uživatel členem, případně VŠECHNY týmy pro superadmina
+        if (isSuper || data.memberEmails?.includes(currentUser.email)) {
           tList.push({ id: docSnap.id, ...data });
         }
       });
@@ -410,12 +417,21 @@ export default function App() {
     setShowAuthModal(true);
   };
 
-  // Mazání / zrušení události (Správce)
-  const handleDeleteEvent = async (eventId: string) => {
-    if (!window.confirm('Opravdu chcete tuto událost zrušit a smazat?')) return;
+  // Mazání / zrušení události (Správce) - otevírá potvrzovací modální dialog (spolehlivě funguje na webu, v iframe i na mobilu)
+  const handleDeleteEvent = (eventId: string) => {
+    const eventToDelete = allEvents.find((e) => e.id === eventId) || events.find((e) => e.id === eventId);
+    if (eventToDelete) {
+      setEventToDeleteConfirm(eventToDelete);
+    } else {
+      // Případ, kdy událost nebyla nalezena v paměti: smazat přímo
+      deleteDoc(doc(db, 'events', eventId)).catch(console.error);
+    }
+  };
+
+  const confirmDeleteEvent = async (eventToDelete: Event) => {
+    setIsDeletingEvent(true);
     try {
-      const eventToDelete = allEvents.find((e) => e.id === eventId) || events.find((e) => e.id === eventId);
-      if (eventToDelete && currentUser && !isEventPast(eventToDelete)) {
+      if (currentUser && !isEventPast(eventToDelete)) {
         const team = teams.find((t) => t.id === eventToDelete.teamId);
         if (team) {
           const cancellerDisplayName = getMemberDisplayName(currentUser.email, team, currentUser);
@@ -428,10 +444,46 @@ export default function App() {
           );
         }
       }
-      await deleteDoc(doc(db, 'events', eventId));
+      await deleteDoc(doc(db, 'events', eventToDelete.id));
+      setEventToDeleteConfirm(null);
     } catch (err) {
       console.error('Chyba při mazání události:', err);
+    } finally {
+      setIsDeletingEvent(false);
     }
+  };
+
+  // Zpracování smazání týmu správcem
+  const handleTeamDeleted = (deletedTeamId: string) => {
+    if (activeTeamId === deletedTeamId) {
+      setActiveTeamId('ALL');
+    }
+    setTeamModalMode(null);
+    setTeams((prev) => prev.filter((t) => t.id !== deletedTeamId));
+    setEvents((prev) => prev.filter((e) => e.teamId !== deletedTeamId));
+    setAllEvents((prev) => prev.filter((e) => e.teamId !== deletedTeamId));
+  };
+
+  // Zpracování opuštění týmu uživatelem
+  const handleLeaveTeam = (teamId: string) => {
+    if (activeTeamId === teamId) {
+      setActiveTeamId('ALL');
+    }
+    setTeams((prev) =>
+      prev
+        .map((t) => {
+          if (t.id === teamId) {
+            return {
+              ...t,
+              memberEmails: (t.memberEmails || []).filter(
+                (e) => e.toLowerCase() !== currentUser?.email?.toLowerCase()
+              ),
+            };
+          }
+          return t;
+        })
+        .filter((t) => isUserSuperAdmin(currentUser) || (t.memberEmails || []).includes(currentUser?.email || ''))
+    );
   };
 
   // Aktivní tým objekt (null pokud je vybráno 'ALL')
@@ -701,7 +753,7 @@ export default function App() {
                       <Users className="w-5 h-5 text-emerald-600" />
                       {activeTeam.name}
                       <span className="text-xs font-normal text-slate-500">
-                        ({activeTeam.memberEmails?.length || 1} členů)
+                        (Počet členů: {activeTeam.memberEmails?.length || 1})
                       </span>
                     </h2>
                   </div>
@@ -713,7 +765,8 @@ export default function App() {
                       className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 text-xs font-bold rounded-xl transition cursor-pointer border border-slate-200 shadow-2xs flex items-center gap-1"
                     >
                       <LayoutDashboard className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>← Zpět na Vše</span>
+                      <span className="hidden sm:inline">← Zpět na Vše</span>
+                      <span className="sm:hidden">← Vše</span>
                     </button>
                     {isCurrentTeamAdmin && (
                       <>
@@ -724,7 +777,8 @@ export default function App() {
                           title="Nastavení týmu, změna kódu a vzhledu událostí"
                         >
                           <Settings className="w-3.5 h-3.5 text-slate-600" />
-                          <span>Nastavení týmu</span>
+                          <span className="hidden sm:inline">Nastavení týmu</span>
+                          <span className="sm:hidden">Nastavení</span>
                         </button>
                         <button
                           type="button"
@@ -733,7 +787,8 @@ export default function App() {
                           title="Vytvořit novou událost pro tento tým"
                         >
                           <Plus className="w-3.5 h-3.5 stroke-[3]" />
-                          <span>Nová událost</span>
+                          <span className="hidden sm:inline">Nová událost</span>
+                          <span className="sm:hidden">Nová</span>
                         </button>
                       </>
                     )}
@@ -741,10 +796,11 @@ export default function App() {
                       <button
                         type="button"
                         onClick={seedDemoData}
-                        className="px-3.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold rounded-xl flex items-center space-x-1.5 transition cursor-pointer border border-emerald-200 shadow-2xs"
+                        className="px-3.5 py-1.5 bg-emerald-500/10 hover:bg-emerald-100 text-emerald-800 text-xs font-bold rounded-xl flex items-center space-x-1.5 transition cursor-pointer border border-emerald-200 shadow-2xs"
                       >
                         <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>Vložit ukázková data (Demo)</span>
+                        <span className="hidden sm:inline">Vložit ukázková data (Demo)</span>
+                        <span className="sm:hidden">Demo data</span>
                       </button>
                     )}
                   </div>
@@ -756,7 +812,8 @@ export default function App() {
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
                         <Calendar className="w-5 h-5 text-emerald-600" />
-                        <span>Nadcházející události</span>
+                        <span className="hidden sm:inline">Nadcházející události</span>
+                        <span className="sm:hidden">Nadcházející</span>
                         <span className="text-xs font-black text-slate-950 bg-emerald-400 px-2.5 py-0.5 rounded-full">
                           {upcomingEvents.length}
                         </span>
@@ -803,7 +860,8 @@ export default function App() {
                       <div className="flex items-center space-x-2.5">
                         <History className="w-4 h-4 text-slate-500" />
                         <h3 className="text-sm font-bold text-slate-900">
-                          Uplynulé události
+                          <span className="hidden sm:inline">Uplynulé události</span>
+                          <span className="sm:hidden">Uplynulé</span>
                         </h3>
                         <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-slate-200 text-slate-700">
                           {pastEvents.length}
@@ -889,6 +947,7 @@ export default function App() {
           onTeamUpdated={(updatedTeam) => {
             setTeams((prev) => prev.map((t) => (t.id === updatedTeam.id ? updatedTeam : t)));
           }}
+          onTeamDeleted={handleTeamDeleted}
         />
       )}
 
@@ -967,6 +1026,7 @@ export default function App() {
               })
             );
           }}
+          onLeaveTeam={handleLeaveTeam}
         />
       )}
 
@@ -976,6 +1036,44 @@ export default function App() {
           currentUser={currentUser}
           onClose={() => setShowNativeAppModal(false)}
         />
+      )}
+
+      {/* Modální okno pro bezpečné potvrzení smazání události (nahrazuje nespolehlivý browser confirm) */}
+      {eventToDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-hidden overscroll-contain animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-sm w-full p-5 sm:p-6 text-center space-y-4 animate-in fade-in zoom-in-95 duration-150 text-slate-900">
+            <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center mx-auto border border-rose-200 shadow-2xs">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-bold text-base sm:text-lg text-slate-950">
+                Smazat událost?
+              </h3>
+              <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                Opravdu si přejete zrušit a trvale smazat událost <strong className="text-slate-900">„{eventToDeleteConfirm.title}“</strong>? Tuto akci nelze vrátit.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setEventToDeleteConfirm(null)}
+                disabled={isDeletingEvent}
+                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 font-bold rounded-xl text-xs transition cursor-pointer border border-slate-200 shadow-2xs disabled:opacity-50"
+              >
+                Ponechat
+              </button>
+              <button
+                type="button"
+                onClick={() => confirmDeleteEvent(eventToDeleteConfirm)}
+                disabled={isDeletingEvent}
+                className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white font-black rounded-xl text-xs transition cursor-pointer shadow-md flex items-center justify-center gap-1.5 disabled:opacity-50"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{isDeletingEvent ? 'Mazání...' : 'Smazat událost'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
     </div>
